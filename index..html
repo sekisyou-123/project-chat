@@ -292,40 +292,46 @@ button{cursor:pointer}
 <div id="app">
   <div id="screen"></div>
   <nav id="bottomNav">
-    <button class="bn active" id="bn-chat" onclick="setPage('chat')"><i class="ti ti-message-circle"></i>トーク</button>
-    <button class="bn" id="bn-tasks" onclick="setPage('tasks')"><i class="ti ti-checkbox"></i>タスク</button>
-    <button class="bn" id="bn-dash" onclick="setPage('dash')"><i class="ti ti-layout-dashboard"></i>概要</button>
-    <button class="bn" id="bn-media" onclick="setPage('media')"><i class="ti ti-photo"></i>メディア</button>
+    <button class="bn active" id="bn-chat" onclick="setPage('chat')"><i class="ti ti-message-circle"></i><span id="bn-chat-label">トーク</span></button>
+    <button class="bn" id="bn-tasks" onclick="setPage('tasks')"><i class="ti ti-checkbox"></i><span id="bn-tasks-label">タスク</span></button>
+    <button class="bn" id="bn-dash" onclick="setPage('dash')"><i class="ti ti-layout-dashboard"></i><span id="bn-dash-label">概要</span></button>
+    <button class="bn" id="bn-media" onclick="setPage('media')"><i class="ti ti-photo"></i><span id="bn-media-label">メディア</span></button>
     <button class="bn" id="bn-ai" onclick="setPage('ai')"><i class="ti ti-sparkles"></i>AI</button>
-    <button class="bn" id="bn-profile" onclick="toggleProfileMenu(event)"><i class="ti ti-user-circle"></i>自分</button>
+    <button class="bn" id="bn-lang" onclick="openLangPicker()"><i class="ti ti-language"></i><span id="bn-lang-label">言語</span></button>
+    <button class="bn" id="bn-profile" onclick="toggleProfileMenu(event)"><i class="ti ti-user-circle"></i><span id="bn-profile-label">自分</span></button>
   </nav>
 </div>
 
 <!-- AUTH -->
 <div id="authScreen">
   <div class="auth-sheet">
-    <div class="auth-logo"><div class="auth-logo-icon"><i class="ti ti-layout-dashboard"></i></div><span class="auth-logo-name">案件管理システム</span></div>
+    <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:12px">
+      <button onclick="setLang('ja')" id="authLangJa" style="padding:4px 10px;border-radius:99px;border:0.5px solid var(--border2);background:transparent;font-size:13px;cursor:pointer;font-family:var(--font)">🇯🇵 日本語</button>
+      <button onclick="setLang('en')" id="authLangEn" style="padding:4px 10px;border-radius:99px;border:0.5px solid var(--border2);background:transparent;font-size:13px;cursor:pointer;font-family:var(--font)">🇺🇸 EN</button>
+      <button onclick="setLang('zh')" id="authLangZh" style="padding:4px 10px;border-radius:99px;border:0.5px solid var(--border2);background:transparent;font-size:13px;cursor:pointer;font-family:var(--font)">🇨🇳 中文</button>
+    </div>
+    <div class="auth-logo"><div class="auth-logo-icon"><i class="ti ti-layout-dashboard"></i></div><span class="auth-logo-name" id="authAppName">案件管理システム</span></div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="authTabLogin" onclick="switchAuthTab('login')">ログイン</button>
       <button class="auth-tab" id="authTabReg" onclick="switchAuthTab('register')">新規登録</button>
     </div>
     <div id="authError" class="auth-error"></div>
     <div id="loginForm">
-      <div class="auth-demo"><strong>デモアカウント</strong><br>tanaka@demo.com / sato@demo.com / suzuki@demo.com<br>パスワード: <strong>demo1234</strong></div>
-      <div class="auth-field"><label>メールアドレス</label><input type="email" id="loginEmail" placeholder="example@mail.com"/></div>
-      <div class="auth-field"><label>パスワード</label><input type="password" id="loginPass" placeholder="パスワードを入力"/></div>
-      <div class="auth-remember"><input type="checkbox" id="rememberMe" checked/><label for="rememberMe">ログインを維持する（30日間）</label></div>
-      <button class="auth-submit" onclick="doLogin()">ログイン</button>
+      <div class="auth-demo" id="authDemoBox"><strong id="authDemoLabel">デモアカウント</strong><br>tanaka@demo.com / sato@demo.com / suzuki@demo.com<br><span id="authDemoPw">パスワード:</span> <strong>demo1234</strong></div>
+      <div class="auth-field"><label id="authEmailLabel">メールアドレス</label><input type="email" id="loginEmail" placeholder="example@mail.com"/></div>
+      <div class="auth-field"><label id="authPassLabel">パスワード</label><input type="password" id="loginPass" placeholder="パスワードを入力" id="loginPassInput"/></div>
+      <div class="auth-remember"><input type="checkbox" id="rememberMe" checked/><label for="rememberMe" id="authRememberLabel">ログインを維持する（30日間）</label></div>
+      <button class="auth-submit" onclick="doLogin()" id="authLoginBtn">ログイン</button>
     </div>
     <div id="registerForm" style="display:none">
-      <div class="auth-field"><label>名前</label><input type="text" id="regName" placeholder="例: 田中 太郎"/></div>
-      <div class="auth-field"><label>メールアドレス</label><input type="email" id="regEmail" placeholder="example@mail.com"/></div>
-      <div class="auth-field"><label>パスワード（6文字以上）</label><input type="password" id="regPass" placeholder="パスワードを設定"/></div>
-      <div class="auth-field"><label>アバターカラー</label><div class="avatar-pick" id="avatarPick"></div></div>
-      <button class="auth-submit" onclick="doRegister()">登録する</button>
+      <div class="auth-field"><label id="authNameLabel">名前</label><input type="text" id="regName" placeholder="例: 田中 太郎" id="regNameInput"/></div>
+      <div class="auth-field"><label id="authRegEmailLabel">メールアドレス</label><input type="email" id="regEmail" placeholder="example@mail.com"/></div>
+      <div class="auth-field"><label id="authRegPassLabel">パスワード（6文字以上）</label><input type="password" id="regPass" placeholder="パスワードを設定" id="regPassInput"/></div>
+      <div class="auth-field"><label id="authColorLabel">アバターカラー</label><div class="avatar-pick" id="avatarPick"></div></div>
+      <button class="auth-submit" onclick="doRegister()" id="authRegBtn">登録する</button>
     </div>
     <div id="authError2" class="auth-error"></div>
-    <button class="auth-guest" onclick="doGuest()"><i class="ti ti-user-question" style="font-size:15px;vertical-align:-2px;margin-right:4px"></i>ゲストとして続ける</button>
+    <button class="auth-guest" onclick="doGuest()" id="authGuestBtn"><i class="ti ti-user-question" style="font-size:15px;vertical-align:-2px;margin-right:4px"></i>ゲストとして続ける</button>
   </div>
 </div>
 
@@ -356,7 +362,35 @@ button{cursor:pointer}
   </div>
 </div>
 
-<!-- FILE INPUT -->
+<!-- LANG PICKER -->
+<div id="langPicker" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:flex-end;justify-content:center" onclick="closeLangPicker(event)">
+  <div style="background:var(--bg);border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));width:100%;max-width:500px" onclick="event.stopPropagation()">
+    <div style="font-size:16px;font-weight:500;color:var(--text);margin-bottom:14px"><i class="ti ti-language" style="font-size:18px;vertical-align:-2px;margin-right:6px"></i>言語 / Language / 语言</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button onclick="setLang('ja')" style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);font-family:var(--font);cursor:pointer;font-size:15px;color:var(--text)" id="langBtn-ja">
+        <span style="font-size:22px">🇯🇵</span><span>日本語</span>
+      </button>
+      <button onclick="setLang('en')" style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);font-family:var(--font);cursor:pointer;font-size:15px;color:var(--text)" id="langBtn-en">
+        <span style="font-size:22px">🇺🇸</span><span>English</span>
+      </button>
+      <button onclick="setLang('zh')" style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:0.5px solid var(--border2);border-radius:var(--radius);background:var(--bg);font-family:var(--font);cursor:pointer;font-size:15px;color:var(--text)" id="langBtn-zh">
+        <span style="font-size:22px">🇨🇳</span><span>中文</span>
+      </button>
+    </div>
+    <div style="margin-top:14px;padding:10px 12px;background:var(--bg2);border-radius:var(--radius);display:flex;align-items:center;gap:10px">
+      <input type="checkbox" id="autoTranslateToggle" style="width:18px;height:18px" ${autoTranslate?"checked":""}  onchange="toggleAutoTranslate(this.checked)"/>
+      <label for="autoTranslateToggle" style="font-size:13px;color:var(--text2)">送信時に自動翻訳 / Auto-translate / 自动翻译</label>
+    </div>
+  </div>
+</div>
+
+<style>
+.translate-btn{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text3);background:transparent;border:none;padding:2px 4px;cursor:pointer;font-family:var(--font);margin-top:3px}
+.translate-btn:active{opacity:.7}
+.translation-bubble{margin-top:4px;padding:6px 10px;background:rgba(0,0,0,.06);border-radius:10px;font-size:13px;line-height:1.45;color:var(--text2);border-left:2px solid var(--border2)}
+.bub.mine .translation-bubble{background:rgba(255,255,255,.15);color:rgba(255,255,255,.9);border-left-color:rgba(255,255,255,.4)}
+.lang-active{background:var(--bg2)!important;border-color:#1d9e75!important;font-weight:500}
+</style>
 <input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" style="display:none" onchange="onFileSelected(event)"/>
 
 <!-- TOAST -->
@@ -366,6 +400,180 @@ button{cursor:pointer}
 // ── CONSTANTS & STATE ──
 const PAL=["#1d9e75","#534ab7","#d85a30","#185fa5","#ba7517","#d4537e","#639922","#e24b4a"];
 const PAL_NAMES={"#1d9e75":"グリーン","#534ab7":"パープル","#d85a30":"コーラル","#185fa5":"ブルー","#ba7517":"アンバー","#d4537e":"ピンク","#639922":"ライム","#e24b4a":"レッド"};
+
+// ── i18n ──
+const LANGS={
+  ja:{
+    appName:"案件管理システム",login:"ログイン",register:"新規登録",
+    demoAccount:"デモアカウント",password:"パスワード",email:"メールアドレス",
+    name:"名前",namePlaceholder:"例: 田中 太郎",passwordPlaceholder:"パスワードを入力",
+    passwordSetPlaceholder:"パスワードを設定",rememberMe:"ログインを維持する（30日間）",
+    loginBtn:"ログイン",registerBtn:"登録する",guestBtn:"ゲストとして続ける",
+    talk:"トーク",tasks:"タスク",dash:"概要",media:"メディア",ai:"AI",me:"自分",
+    projects:"案件",dm:"ダイレクトメッセージ",
+    newProject:"新しい案件を追加",projectName:"案件名",projectNamePlaceholder:"案件名を入力",
+    color:"カラー",cancel:"キャンセル",save:"保存",
+    chat:"チャット",mediaTab:"メディア",linksTab:"リンク",filesTab:"ファイル",
+    msgPlaceholder:"メッセージを入力…",
+    taskTitle:"タスク名",assignee:"担当者",due:"期限",priority:"優先度",
+    high:"高",med:"中",low:"低",memo:"メモ",memoPlaceholder:"メモ（任意）",
+    done:"完了",undo:"戻す",edit:"編集",
+    myTasks:"自分のタスク",overdue:"期限超過",pending:"未完了",completed:"完了",
+    noTasks:"担当タスクはありません",
+    dashboard:"ダッシュボード",projectCount:"案件数",openTasks:"未完了タスク",
+    overdueCount:"期限超過",messages:"メッセージ",progress:"案件別進捗",
+    aiAnalysis:"AI分析",apiKeySet:"APIキー設定済み",change:"変更",
+    analyzeBtn:"AI分析で最適カラーを提案",analyzing:"分析中…",reAnalyze:"再分析",
+    aiProposal:"AI提案:",currentMatch:"現在と一致",
+    settings:"設定 — 案件管理",registeredProjects:"登録案件",
+    profileEdit:"プロフィール編集",newPassword:"新しいパスワード（変更する場合）",
+    passwordChangePlaceholder:"変更しない場合は空白",avatarColor:"アバターカラー",
+    logout:"ログアウト",
+    translate:"翻訳を見る",translating:"翻訳中…",original:"原文に戻す",
+    autoTranslate:"自動翻訳",autoTranslateOn:"送信時に自動翻訳",
+    noMediaYet:"画像がまだありません",noLinksYet:"リンクがまだありません",noFilesYet:"ファイルがまだありません",
+    uploadingFile:"アップロード中…",uploadDone:"アップロード完了",
+    loading:"データを読み込み中…",errorLoad:"読み込みエラー",
+    noOtherUsers:"他のユーザーが登録するとここに表示されます",
+    langName:"日本語",lang:"ja",
+  },
+  en:{
+    appName:"Project Chat",login:"Login",register:"Sign Up",
+    demoAccount:"Demo Account",password:"Password",email:"Email",
+    name:"Name",namePlaceholder:"e.g. John Smith",passwordPlaceholder:"Enter password",
+    passwordSetPlaceholder:"Set password",rememberMe:"Keep me logged in (30 days)",
+    loginBtn:"Login",registerBtn:"Sign Up",guestBtn:"Continue as Guest",
+    talk:"Chats",tasks:"Tasks",dash:"Overview",media:"Media",ai:"AI",me:"Me",
+    projects:"Projects",dm:"Direct Messages",
+    newProject:"Add New Project",projectName:"Project Name",projectNamePlaceholder:"Enter project name",
+    color:"Color",cancel:"Cancel",save:"Save",
+    chat:"Chat",mediaTab:"Media",linksTab:"Links",filesTab:"Files",
+    msgPlaceholder:"Type a message…",
+    taskTitle:"Task Name",assignee:"Assignee",due:"Due Date",priority:"Priority",
+    high:"High",med:"Medium",low:"Low",memo:"Memo",memoPlaceholder:"Memo (optional)",
+    done:"Done",undo:"Undo",edit:"Edit",
+    myTasks:"My Tasks",overdue:"Overdue",pending:"Pending",completed:"Completed",
+    noTasks:"No tasks assigned to you",
+    dashboard:"Dashboard",projectCount:"Projects",openTasks:"Open Tasks",
+    overdueCount:"Overdue",messages:"Messages",progress:"Progress by Project",
+    aiAnalysis:"AI Analysis",apiKeySet:"API Key Set",change:"Change",
+    analyzeBtn:"Suggest Best Color with AI",analyzing:"Analyzing…",reAnalyze:"Re-analyze",
+    aiProposal:"AI Suggestion:",currentMatch:"Matches Current",
+    settings:"Settings — Projects",registeredProjects:"Registered Projects",
+    profileEdit:"Edit Profile",newPassword:"New Password (only if changing)",
+    passwordChangePlaceholder:"Leave blank to keep current",avatarColor:"Avatar Color",
+    logout:"Logout",
+    translate:"See Translation",translating:"Translating…",original:"Show Original",
+    autoTranslate:"Auto Translate",autoTranslateOn:"Auto-translate on send",
+    noMediaYet:"No images yet",noLinksYet:"No links yet",noFilesYet:"No files yet",
+    uploadingFile:"Uploading…",uploadDone:"Upload complete",
+    loading:"Loading data…",errorLoad:"Load error",
+    noOtherUsers:"Other users will appear here once they register",
+    langName:"English",lang:"en",
+  },
+  zh:{
+    appName:"项目管理系统",login:"登录",register:"注册",
+    demoAccount:"演示账号",password:"密码",email:"邮箱",
+    name:"姓名",namePlaceholder:"例：张三",passwordPlaceholder:"请输入密码",
+    passwordSetPlaceholder:"设置密码",rememberMe:"保持登录（30天）",
+    loginBtn:"登录",registerBtn:"注册",guestBtn:"以访客身份继续",
+    talk:"聊天",tasks:"任务",dash:"概览",media:"媒体",ai:"AI",me:"我",
+    projects:"项目",dm:"私信",
+    newProject:"添加新项目",projectName:"项目名称",projectNamePlaceholder:"请输入项目名称",
+    color:"颜色",cancel:"取消",save:"保存",
+    chat:"聊天",mediaTab:"媒体",linksTab:"链接",filesTab:"文件",
+    msgPlaceholder:"输入消息…",
+    taskTitle:"任务名称",assignee:"负责人",due:"截止日期",priority:"优先级",
+    high:"高",med:"中",low:"低",memo:"备注",memoPlaceholder:"备注（可选）",
+    done:"完成",undo:"撤销",edit:"编辑",
+    myTasks:"我的任务",overdue:"已逾期",pending:"未完成",completed:"已完成",
+    noTasks:"没有分配给您的任务",
+    dashboard:"仪表盘",projectCount:"项目数",openTasks:"未完成任务",
+    overdueCount:"逾期",messages:"消息",progress:"各项目进度",
+    aiAnalysis:"AI分析",apiKeySet:"API密钥已设置",change:"更改",
+    analyzeBtn:"用AI推荐最佳颜色",analyzing:"分析中…",reAnalyze:"重新分析",
+    aiProposal:"AI建议：",currentMatch:"与当前一致",
+    settings:"设置 — 项目管理",registeredProjects:"已注册项目",
+    profileEdit:"编辑个人资料",newPassword:"新密码（仅在更改时填写）",
+    passwordChangePlaceholder:"不更改请留空",avatarColor:"头像颜色",
+    logout:"退出登录",
+    translate:"查看翻译",translating:"翻译中…",original:"显示原文",
+    autoTranslate:"自动翻译",autoTranslateOn:"发送时自动翻译",
+    noMediaYet:"暂无图片",noLinksYet:"暂无链接",noFilesYet:"暂无文件",
+    uploadingFile:"上传中…",uploadDone:"上传完成",
+    loading:"加载数据中…",errorLoad:"加载错误",
+    noOtherUsers:"其他用户注册后将显示在这里",
+    langName:"中文",lang:"zh",
+  }
+};
+
+let currentLang=localStorage.getItem("pmsys_lang")||"ja";
+function t(key){return LANGS[currentLang]?.[key]||LANGS.ja[key]||key;}
+function setLang(lang){currentLang=lang;localStorage.setItem("pmsys_lang",lang);updateAuthUI();render();}
+function setLang(lang){
+  currentLang=lang;
+  localStorage.setItem("pmsys_lang",lang);
+  updateAuthUI();
+  // Close lang picker if open
+  const lp=document.getElementById("langPicker");
+  if(lp)lp.style.display="none";
+  render();
+}
+
+function updateAuthUI(){
+  const L=LANGS[currentLang]||LANGS.ja;
+  // App name
+  const appName=document.getElementById("authAppName");
+  if(appName)appName.textContent=L.appName;
+  // Tabs
+  const tabLogin=document.getElementById("authTabLogin");
+  const tabReg=document.getElementById("authTabReg");
+  if(tabLogin)tabLogin.textContent=L.login;
+  if(tabReg)tabReg.textContent=L.register;
+  // Login form
+  const emailLabel=document.getElementById("authEmailLabel");
+  const passLabel=document.getElementById("authPassLabel");
+  const rememberLabel=document.getElementById("authRememberLabel");
+  const loginBtn=document.getElementById("authLoginBtn");
+  const demoLabel=document.getElementById("authDemoLabel");
+  const demoPw=document.getElementById("authDemoPw");
+  if(emailLabel)emailLabel.textContent=L.email;
+  if(passLabel)passLabel.textContent=L.password;
+  if(rememberLabel)rememberLabel.textContent=L.rememberMe;
+  if(loginBtn)loginBtn.textContent=L.loginBtn;
+  if(demoLabel)demoLabel.textContent=L.demoAccount;
+  if(demoPw)demoPw.textContent=L.password+":";
+  // Register form
+  const nameLabel=document.getElementById("authNameLabel");
+  const regEmailLabel=document.getElementById("authRegEmailLabel");
+  const regPassLabel=document.getElementById("authRegPassLabel");
+  const colorLabel=document.getElementById("authColorLabel");
+  const regBtn=document.getElementById("authRegBtn");
+  if(nameLabel)nameLabel.textContent=L.name;
+  if(regEmailLabel)regEmailLabel.textContent=L.email;
+  if(regPassLabel)regPassLabel.textContent=L.password+" (6+)";
+  if(colorLabel)colorLabel.textContent=L.avatarColor;
+  if(regBtn)regBtn.textContent=L.registerBtn;
+  // Guest button
+  const guestBtn=document.getElementById("authGuestBtn");
+  if(guestBtn)guestBtn.innerHTML=`<i class="ti ti-user-question" style="font-size:15px;vertical-align:-2px;margin-right:4px"></i>${L.guestBtn}`;
+  // Placeholders
+  const loginPass=document.getElementById("loginPass");
+  const regName=document.getElementById("regName");
+  if(loginPass)loginPass.placeholder=L.passwordPlaceholder;
+  if(regName)regName.placeholder=L.namePlaceholder;
+  // Highlight active lang button
+  ["ja","en","zh"].forEach(l=>{
+    const btn=document.getElementById(`authLang${l.charAt(0).toUpperCase()+l.slice(1)}`);
+    if(btn){
+      btn.style.background=l===currentLang?"var(--bg2)":"transparent";
+      btn.style.fontWeight=l===currentLang?"500":"400";
+      btn.style.borderColor=l===currentLang?"var(--border2)":"var(--border)";
+    }
+  });
+}
+
+let autoTranslate=localStorage.getItem("pmsys_auto_translate")==="true";
 // ── SUPABASE ──
 const SUPABASE_URL="https://slpvggfdhqzxyjljinqa.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscHZnZ2ZkaHF6eHlqbGppbnFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NTIxNzEsImV4cCI6MjA5NjQyODE3MX0.4AQ4eCDJWKpfjCnaz_T5Td8wqDXcPVSGsK66NLZ1mjQ";
@@ -577,7 +785,7 @@ function doGuest(){
   hideAuth();
 }
 function doLogout(){currentUser=null;_cachedUsers=null;clearSession();closeProfileMenu();showAuth();}
-function showAuth(){document.getElementById("authScreen").classList.remove("hidden");renderAvatarPick();}
+function showAuth(){document.getElementById("authScreen").classList.remove("hidden");renderAvatarPick();updateAuthUI();}
 function hideAuth(){
   document.getElementById("authScreen").classList.add("hidden");
   updateNavProfile();
@@ -808,6 +1016,8 @@ function msgHTML(m,c,projMsgs){
   const attH=renderAttachments(m.attachments);
   const rqH=getReplyQuoteHTML(m.replyTo,projMsgs||[],c,m.mine);
   const textH=renderTextWithMentions(m.text);
+  const canTranslate=m.text&&m.text.length>1;
+  const transBtn=canTranslate?`<button class="translate-btn" onclick="showTranslation('${m.id}','${(m.text||"").replace(/'/g,"\\'")}',this)"><i class="ti ti-language" style="font-size:11px"></i>${t("translate")}</button>`:"";
   return`<div class="mrow${m.mine?" mine":""}" id="msg-${m.id}">
     <div class="av-sm" style="background:${m.mine?(currentUser?.color||c):c}">${m.sender?m.sender[0]:"?"}</div>
     <div class="bw${m.mine?" mine":""}">
@@ -815,11 +1025,12 @@ function msgHTML(m,c,projMsgs){
       <div class="bub ${m.mine?"mine":"other"}" style="${m.mine?`background:${c}`:""}">
         ${rqH}${attH?`<div class="msg-attachments">${attH}</div>`:""}${textH}
       </div>
+      ${transBtn}
       <span class="ts">${m.time}</span>
     </div>
     <div class="msg-actions" style="${m.mine?"right:0":"left:36px"}">
-      <button class="mac-btn" onclick="startReply('${m.id}')" title="返信"><i class="ti ti-corner-up-left"></i></button>
-      ${!m.mine?`<button class="mac-btn" onclick="mentionUser('${esc(m.sender)}')" title="メンション"><i class="ti ti-at"></i></button>`:""}
+      <button class="mac-btn" onclick="startReply('${m.id}')" title="${t("undo")}"><i class="ti ti-corner-up-left"></i></button>
+      ${!m.mine?`<button class="mac-btn" onclick="mentionUser('${esc(m.sender)}')"><i class="ti ti-at"></i></button>`:""}
     </div>
   </div>`;
 }
@@ -967,6 +1178,71 @@ function renderNav(){
     const el=document.getElementById("bn-"+p);
     if(el)el.classList.toggle("active",state.page===p);
   });
+  const navKeys={chat:"talk",tasks:"tasks",dash:"dash",media:"media",lang:"langName",profile:"me"};
+  Object.entries(navKeys).forEach(([id,key])=>{
+    const el=document.getElementById(`bn-${id}-label`);
+    if(el)el.textContent=t(key);
+  });
+}
+
+// ── LANG PICKER ──
+function openLangPicker(){
+  const el=document.getElementById("langPicker");
+  if(!el)return;
+  el.style.display="flex";
+  ["ja","en","zh"].forEach(l=>{
+    const btn=document.getElementById(`langBtn-${l}`);
+    if(btn)btn.style.background=l===currentLang?"var(--bg2)":"var(--bg)";
+  });
+  const toggle=document.getElementById("autoTranslateToggle");
+  if(toggle)toggle.checked=autoTranslate;
+}
+function closeLangPicker(e){
+  if(e.target===document.getElementById("langPicker"))
+    document.getElementById("langPicker").style.display="none";
+}
+function toggleAutoTranslate(val){
+  autoTranslate=val;
+  localStorage.setItem("pmsys_auto_translate",val?"true":"false");
+}
+
+// ── AI TRANSLATION ──
+const translationCache={};
+async function translateMsg(msgId,text){
+  if(!apiKey||!text)return null;
+  if(translationCache[msgId]?.[currentLang])return translationCache[msgId][currentLang];
+  const langNames={ja:"日本語",en:"English",zh:"中文（简体）"};
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:400,messages:[{role:"user",content:`Translate the following message to ${langNames[currentLang]}. Return only the translation, nothing else.\n\n"${text}"`}]})
+    });
+    const data=await res.json();
+    if(data.error)return null;
+    const translated=(data.content[0]?.text||"").trim();
+    if(!translationCache[msgId])translationCache[msgId]={};
+    translationCache[msgId][currentLang]=translated;
+    return translated;
+  }catch(e){return null;}
+}
+
+async function showTranslation(msgId,text,btn){
+  if(!apiKey){showToast(t("apiKeySet")+" required");return;}
+  const existing=document.getElementById(`trans-${msgId}`);
+  if(existing){existing.remove();btn.textContent=t("translate");return;}
+  btn.textContent=t("translating");
+  const translated=await translateMsg(msgId,text);
+  if(!translated){btn.textContent=t("translate");return;}
+  btn.textContent=t("original");
+  const div=document.createElement("div");
+  div.id=`trans-${msgId}`;div.className="translation-bubble";div.textContent=translated;
+  btn.parentNode.insertBefore(div,btn.nextSibling);
+}
+
+async function sendMsgWithTranslation(text){
+  if(!autoTranslate||!apiKey||!text)return text;
+  return text; // 送信は原文のまま、受信側で翻訳ボタンを使用
 }
 
 function renderScreen(){
@@ -984,8 +1260,8 @@ function renderScreen(){
 // ── TALK LIST ──
 function renderTalkListScreen(el){
   const allUsers=(_cachedUsers||[]).filter(u=>u.id!==currentUser?.id&&!u.is_guest).map(u=>u.is_guest!==undefined?dbToUser(u):u);
-  let html=`<div class="topbar"><span class="tb-title">トーク</span><button class="tb-btn" onclick="openNewProjModal()"><i class="ti ti-plus"></i></button></div><div class="list-view">`;
-  html+=`<div class="list-section-header">案件</div>`;
+  let html=`<div class="topbar"><span class="tb-title">${t("talk")}</span><button class="tb-btn" onclick="openNewProjModal()"><i class="ti ti-plus"></i></button></div><div class="list-view">`;
+  html+=`<div class="list-section-header">${t("projects")}</div>`;
   state.projects.forEach(p=>{
     const msgs=state.messages[p.id]||[];
     const open=msgs.filter(m=>m.type==="task"&&!m.task.done).length;
@@ -1004,7 +1280,7 @@ function renderTalkListScreen(el){
       </div>
     </div>`;
   });
-  html+=`<div class="list-section-header">ダイレクトメッセージ</div>`;
+  html+=`<div class="list-section-header">${t("dm")}</div>`;
   if(allUsers.length){
     allUsers.forEach(u=>{
       const key=currentUser?getDmKey(currentUser.id,u.id):"";
@@ -1025,7 +1301,7 @@ function renderTalkListScreen(el){
       </div>`;
     });
   } else {
-    html+=`<div style="padding:12px 16px;font-size:13px;color:var(--text3)">他のユーザーが登録するとここに表示されます</div>`;
+    html+=`<div style="padding:12px 16px;font-size:13px;color:var(--text3)">${t("noOtherUsers")}</div>`;
   }
   html+=`</div>`;
   el.innerHTML=html;
@@ -1089,7 +1365,7 @@ function renderChatScreen(el){
     const msgs=state.messages[state.curRoom]||[];
     let msgsH=`<div class="date-div">2026年6月3日</div>`;
     msgs.forEach(m=>{msgsH+=m.type==="msg"?msgHTML(m,c,msgs):taskHTML(m,c,msgs);});
-    const tabs=["チャット","タスク","メディア","リンク","ファイル"];
+    const tabs=[t("chat"),t("tasks"),t("mediaTab"),t("linksTab"),t("filesTab")];
     const tabKeys=["chat","tasks","media","links","files"];
     el.innerHTML=`
       <div class="topbar">
@@ -1268,12 +1544,12 @@ function renderTasksScreen(el){
       </div>`;
     }).join("");
   };
-  el.innerHTML=`<div class="topbar"><span class="tb-title">自分のタスク</span><span class="tb-sub">${allTasks.length}件</span></div>
+  el.innerHTML=`<div class="topbar"><span class="tb-title">${t("myTasks")}</span><span class="tb-sub">${allTasks.length}</span></div>
     <div class="list-view">
-      ${allTasks.length===0?`<div class="empty"><i class="ti ti-checkbox"></i>担当タスクはありません</div>`:""}
-      ${renderGroup(overdue,"⚠ 期限超過")}
-      ${renderGroup(open,"未完了")}
-      ${renderGroup(done,"完了")}
+      ${allTasks.length===0?`<div class="empty"><i class="ti ti-checkbox"></i>${t("noTasks")}</div>`:""}
+      ${renderGroup(overdue,`⚠ ${t("overdue")}`)}
+      ${renderGroup(open,t("pending"))}
+      ${renderGroup(done,t("completed"))}
     </div>`;
 }
 
@@ -1304,12 +1580,12 @@ function renderDashScreen(el){
   el.innerHTML=`<div class="topbar"><span class="tb-title">ダッシュボード</span></div>
     <div class="list-view">
       <div class="dash-stats">
-        <div class="dash-stat"><div class="ds-num">${state.projects.length}</div><div class="ds-lbl">案件数</div></div>
-        <div class="dash-stat"><div class="ds-num">${open}</div><div class="ds-lbl">未完了タスク</div></div>
-        <div class="dash-stat"><div class="ds-num" style="color:${ov>0?"#a32d2d":"var(--text)"}">${ov}</div><div class="ds-lbl">期限超過</div></div>
-        <div class="dash-stat"><div class="ds-num">${allMsgs}</div><div class="ds-lbl">メッセージ</div></div>
+        <div class="dash-stat"><div class="ds-num">${state.projects.length}</div><div class="ds-lbl">${t("projectCount")}</div></div>
+        <div class="dash-stat"><div class="ds-num">${open}</div><div class="ds-lbl">${t("openTasks")}</div></div>
+        <div class="dash-stat"><div class="ds-num" style="color:${ov>0?"#a32d2d":"var(--text)"}">${ov}</div><div class="ds-lbl">${t("overdueCount")}</div></div>
+        <div class="dash-stat"><div class="ds-num">${allMsgs}</div><div class="ds-lbl">${t("messages")}</div></div>
       </div>
-      <div class="dash-section"><div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px">案件別進捗</div>${projCards}</div>
+      <div class="dash-section"><div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px">${t("progress")}</div>${projCards}</div>
     </div>`;
 }
 

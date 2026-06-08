@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<title>案件管理</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#fff;--bg2:#f7f7f5;--bg3:#f0efe9;
+  --text:#1a1a18;--text2:#5c5c58;--text3:#9a9990;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.13);
+  --radius:10px;--font:'Noto Sans JP',sans-serif;
+  --bottom-nav:58px;--top-bar:52px;--safe-bottom:env(safe-area-inset-bottom,0px);
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1e1e1c;--bg2:#252523;--bg3:#2c2c2a;
+  --text:#e8e8e4;--text2:#a0a09a;--text3:#666660;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:var(--font)}
+body{background:var(--bg);color:var(--text)}
+input,select,textarea,button{font-family:var(--font);outline:none}
+input,select,textarea{font-size:16px;background:var(--bg);color:var(--text);border:0.5px solid var(--border2);border-radius:var(--radius);padding:9px 12px}
+input:focus,select:focus,textarea:focus{border-color:#1d9e75}
+button{cursor:pointer}
+::-webkit-scrollbar{display:none}
+
+/* ── APP SHELL ── */
+#app{height:100dvh;display:flex;flex-direction:column;overflow:hidden;position:relative}
+#screen{flex:1;overflow:hidden;display:flex;flex-direction:column;position:relative}
+
+/* ── BOTTOM NAV ── */
+#bottomNav{height:calc(var(--bottom-nav) + var(--safe-bottom));background:var(--bg);border-top:0.5px solid var(--border);display:flex;align-items:flex-start;padding-top:4px;flex-shrink:0}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border:none;background:transparent;color:var(--text3);font-size:10px;font-family:var(--font);transition:color .15s}
+.bn i{font-size:22px;line-height:1}
+.bn.active{color:#1d9e75}
+
+/* ── TOPBAR ── */
+.topbar{height:var(--top-bar);background:var(--bg);border-bottom:0.5px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0}
+.tb-back{width:32px;height:32px;border:none;background:transparent;color:var(--text2);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:-6px}
+.tb-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:#fff;flex-shrink:0}
+.tb-title{flex:1;font-size:15px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tb-sub{font-size:11px;color:var(--text3);flex-shrink:0}
+.tb-btn{width:34px;height:34px;border:none;background:transparent;color:var(--text2);font-size:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── LIST VIEW (talks, dm) ── */
+.list-view{flex:1;overflow-y:auto;background:var(--bg)}
+.list-section-header{padding:8px 16px 4px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;background:var(--bg2)}
+.list-item{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--bg);border-bottom:0.5px solid var(--border);active:background:var(--bg2)}
+.list-item:active{background:var(--bg2)}
+.li-av{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:#fff;flex-shrink:0}
+.li-body{flex:1;min-width:0}
+.li-name{font-size:14px;font-weight:500;color:var(--text)}
+.li-last{font-size:12px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
+.li-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.li-time{font-size:11px;color:var(--text3)}
+.li-badge{min-width:18px;height:18px;border-radius:9px;font-size:10px;font-weight:500;color:#fff;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.li-dot{width:8px;height:8px;border-radius:50%;opacity:.7}
+.li-sub-btns{display:flex;gap:0;padding:0 16px 10px 70px}
+.li-sub-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px 4px;font-size:11px;color:var(--text3);background:var(--bg2);border:0.5px solid var(--border);font-family:var(--font)}
+.li-sub-btn:first-child{border-radius:8px 0 0 8px}
+.li-sub-btn:last-child{border-radius:0 8px 8px 0}
+.li-sub-btn:not(:first-child){border-left:none}
+.li-sub-btn:active{background:var(--bg3)}
+
+/* ── CHAT ── */
+.chat-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.messages{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.date-div{text-align:center;font-size:11px;color:var(--text3);padding:4px 0}
+.mrow{display:flex;gap:8px;align-items:flex-end}
+.mrow.mine{flex-direction:row-reverse}
+.av-sm{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#fff}
+.bw{display:flex;flex-direction:column;max-width:78%;gap:2px}
+.bw.mine{align-items:flex-end}
+.sn{font-size:11px;color:var(--text3);padding:0 3px}
+.bub{padding:9px 12px;border-radius:18px;font-size:14px;line-height:1.45;word-break:break-word;border:0.5px solid transparent}
+.bub.other{background:var(--bg2);border-color:var(--border);color:var(--text)}
+.bub.mine{color:#fff}
+.bub.taskb{padding:0;overflow:hidden;background:var(--bg);border-color:var(--border2);border-radius:14px}
+.ti3{padding:10px 12px 6px}
+.ttl3{font-size:14px;font-weight:500;color:var(--text);margin-bottom:3px}
+.ttl3.done{text-decoration:line-through;color:var(--text3)}
+.tmeta3{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.pill{font-size:11px;padding:2px 8px;border-radius:99px;font-weight:500}
+.ph{background:#fcebeb;color:#a32d2d}.pm{background:#faeeda;color:#854f0b}.pl{background:#eaf3de;color:#3b6d11}
+.tbtns3{border-top:0.5px solid var(--border);display:flex}
+.tbtn3{flex:1;padding:9px 4px;font-size:13px;border:none;background:transparent;color:var(--text2);display:flex;align-items:center;justify-content:center;gap:4px}
+.tbtn3+.tbtn3{border-left:0.5px solid var(--border)}
+.tbtn3.ck{color:#1d9e75}
+.ts{font-size:10px;color:var(--text3);padding:0 3px}
+.msg-attachments{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+.att-image{max-width:160px;max-height:140px;border-radius:10px;cursor:pointer;display:block;border:0.5px solid var(--border)}
+.att-file{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;font-size:12px;color:var(--text2);max-width:180px;text-decoration:none}
+.mention{display:inline;background:#e6f1fb;color:#0c447c;border-radius:4px;padding:0 3px;font-weight:500}
+.reply-quote{background:var(--bg2);border-left:3px solid var(--border2);border-radius:0 8px 8px 0;padding:5px 9px;margin-bottom:5px;font-size:12px;color:var(--text2);cursor:pointer}
+.reply-quote .rq-sender{font-weight:500;color:var(--text);margin-bottom:1px}
+.bub.mine .reply-quote{background:rgba(255,255,255,.18);border-left-color:rgba(255,255,255,.5)}
+.bub.mine .reply-quote .rq-sender,.bub.mine .reply-quote .rq-text{color:rgba(255,255,255,.9)}
+
+/* Hover actions (long-press feel) */
+.mrow{position:relative}
+.msg-actions{display:none;position:absolute;top:-18px;background:var(--bg);border:0.5px solid var(--border2);border-radius:10px;padding:2px;gap:1px}
+.mrow.mine .msg-actions{right:0}
+.mrow:not(.mine) .msg-actions{left:32px}
+.mrow:active .msg-actions,.mrow.show-actions .msg-actions{display:flex}
+.mac-btn{width:30px;height:30px;border:none;background:transparent;color:var(--text2);font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+.mac-btn:active{background:var(--bg2)}
+
+/* ── INPUT ── */
+.input-area{background:var(--bg);border-top:0.5px solid var(--border);padding:8px 12px calc(8px + var(--safe-bottom));flex-shrink:0}
+.reply-bar{display:flex;align-items:center;gap:6px;padding:5px 10px 8px;font-size:12px;color:var(--text2)}
+.rb-sender{font-weight:500;color:var(--text)}
+.rb-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rb-close{width:20px;height:20px;border:none;background:transparent;color:var(--text3);font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.attach-preview{display:flex;flex-wrap:wrap;gap:4px;padding-bottom:6px}
+.ap-item{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:var(--bg2);border:0.5px solid var(--border);border-radius:8px;font-size:11px;color:var(--text2);max-width:150px}
+.ap-img{width:32px;height:32px;object-fit:cover;border-radius:5px}
+.ap-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.ap-rm{width:16px;height:16px;border:none;background:transparent;color:var(--text3);font-size:14px;display:flex;align-items:center;justify-content:center;padding:0;border-radius:50%}
+.input-row{display:flex;gap:8px;align-items:flex-end}
+.attach-btn{width:36px;height:36px;border:none;background:transparent;color:var(--text3);font-size:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.msg-input{flex:1;background:var(--bg2);border:0.5px solid var(--border2);border-radius:20px;padding:8px 14px;font-size:15px;color:var(--text);line-height:1.3;resize:none;min-height:36px;max-height:100px;overflow-y:auto}
+.msg-input:focus{border-color:#1d9e75;background:var(--bg)}
+.send-btn{width:36px;height:36px;border-radius:50%;border:none;color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .1s}
+.send-btn:active{opacity:.8}
+.tabs-row{display:flex;overflow-x:auto;border-bottom:0.5px solid var(--border);flex-shrink:0;background:var(--bg)}
+.tab-pill{flex-shrink:0;padding:9px 14px;font-size:13px;color:var(--text3);border:none;background:transparent;font-family:var(--font);border-bottom:2px solid transparent}
+.tab-pill.active{color:var(--text);border-bottom-color:var(--text);font-weight:500}
+
+/* ── PANEL (media/files/links) ── */
+.panel-wrap{flex:1;overflow-y:auto;background:var(--bg)}
+.panel-section-label{font-size:11px;color:var(--text3);padding:10px 14px 4px;text-transform:uppercase;letter-spacing:.04em}
+.media-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px}
+.media-item{aspect-ratio:1;overflow:hidden;cursor:pointer;position:relative;background:var(--bg2)}
+.media-item img{width:100%;height:100%;object-fit:cover}
+.media-item .mi-dot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;border:1.5px solid #fff}
+.file-list-m{display:flex;flex-direction:column}
+.file-item-m{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:0.5px solid var(--border);background:var(--bg);text-decoration:none}
+.file-item-m:active{background:var(--bg2)}
+.file-icon-m{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.file-body-m{flex:1;min-width:0}
+.file-name-m{font-size:14px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-meta-m{font-size:11px;color:var(--text3);margin-top:2px;display:flex;gap:6px}
+.link-item-m{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:0.5px solid var(--border);background:var(--bg);cursor:pointer}
+.link-item-m:active{background:var(--bg2)}
+.link-favicon{width:32px;height:32px;border-radius:8px;background:var(--bg2);border:0.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;overflow:hidden}
+.link-favicon img{width:100%;height:100%;object-fit:contain}
+.link-body-m{flex:1;min-width:0}
+.link-url-m{font-size:13px;color:#185fa5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.link-meta-m{font-size:11px;color:var(--text3);margin-top:2px}
+.link-copy-m{width:32px;height:32px;border:none;background:transparent;color:var(--text3);font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── TASK LIST ── */
+.task-group-header{padding:8px 16px 4px;font-size:11px;font-weight:500;color:var(--text2)}
+.task-card-m{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:0.5px solid var(--border);background:var(--bg)}
+.tc-bar{width:3px;height:36px;border-radius:99px;flex-shrink:0}
+.tc-body{flex:1;min-width:0}
+.tc-title{font-size:14px;font-weight:500;color:var(--text)}
+.tc-title.done{text-decoration:line-through;color:var(--text3)}
+.tc-meta{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:3px}
+.tc-done-btn{width:34px;height:34px;border:0.5px solid var(--border2);border-radius:10px;background:transparent;color:#1d9e75;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tc-done-btn:active{background:var(--bg2)}
+
+/* ── DASHBOARD ── */
+.dash-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px}
+.dash-stat{background:var(--bg2);border-radius:var(--radius);padding:12px 14px}
+.ds-num{font-size:26px;font-weight:500;color:var(--text)}
+.ds-lbl{font-size:11px;color:var(--text2);margin-top:2px}
+.dash-section{padding:0 16px 12px}
+.proj-progress-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.ppc-bar-wrap{width:44px;height:44px;position:relative;flex-shrink:0}
+.ppc-info{flex:1;min-width:0}
+.ppc-name{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppc-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.ppc-pct{font-size:16px;font-weight:500}
+
+/* ── AI PAGE ── */
+.ai-page{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.ai-proj-card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.apc-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:0.5px solid var(--border)}
+.apc-body{padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.ai-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border:0.5px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text2);font-size:13px;font-family:var(--font);width:100%}
+.ai-btn:active{background:var(--bg2)}
+.ai-result{background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--text2);line-height:1.6}
+.cs-opts{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.cs-opt{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;border:0.5px solid var(--border);background:transparent;font-size:12px;color:var(--text2);font-family:var(--font)}
+.cs-opt:active{background:var(--bg)}
+.cs-opt.selected{background:var(--bg);border-color:var(--border2);font-weight:500;color:var(--text)}
+
+/* ── SETTINGS ── */
+.settings-page{flex:1;overflow-y:auto}
+.settings-section{padding:12px 16px 4px;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.settings-item{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:0.5px solid var(--border);background:var(--bg)}
+.settings-item:active{background:var(--bg2)}
+.si-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.si-body{flex:1;min-width:0}
+.si-name{font-size:14px;color:var(--text)}
+.si-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.si-arrow{font-size:18px;color:var(--text3)}
+.si-del{font-size:18px;color:#a32d2d}
+.btn-add{display:flex;align-items:center;justify-content:center;gap:6px;margin:14px 16px;padding:12px;border:0.5px dashed var(--border2);border-radius:var(--radius);background:transparent;color:var(--text2);font-size:14px;font-family:var(--font);width:calc(100% - 32px)}
+.btn-add:active{background:var(--bg2)}
+
+/* ── AUTH ── */
+#authScreen{position:fixed;inset:0;background:var(--bg3);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding-bottom:var(--safe-bottom)}
+#authScreen.hidden{display:none}
+.auth-sheet{background:var(--bg);border-radius:20px 20px 0 0;padding:24px 20px 28px;width:100%;max-width:500px}
+.auth-logo{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.auth-logo-icon{width:34px;height:34px;border-radius:9px;background:#1d9e75;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px}
+.auth-logo-name{font-size:16px;font-weight:500;color:var(--text)}
+.auth-tabs{display:flex;background:var(--bg2);border-radius:10px;padding:3px;margin-bottom:16px}
+.auth-tab{flex:1;padding:8px;font-size:14px;border:none;background:transparent;color:var(--text3);border-radius:8px;font-family:var(--font);transition:all .15s}
+.auth-tab.active{background:var(--bg);color:var(--text);font-weight:500}
+.auth-field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.auth-field label{font-size:13px;color:var(--text2)}
+.auth-field input{font-size:16px;padding:11px 14px;width:100%}
+.auth-demo{background:#e1f5ee;border:0.5px solid #9fe1cb;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#085041}
+.auth-remember{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.auth-remember input{width:18px;height:18px}
+.auth-remember label{font-size:13px;color:var(--text2)}
+.auth-submit{width:100%;padding:13px;font-size:15px;font-weight:500;background:#1d9e75;color:#fff;border:none;border-radius:var(--radius);font-family:var(--font);margin-bottom:10px}
+.auth-submit:active{opacity:.85}
+.auth-guest{width:100%;padding:11px;font-size:14px;background:transparent;color:var(--text2);border:0.5px solid var(--border2);border-radius:var(--radius);font-family:var(--font)}
+.auth-guest:active{background:var(--bg2)}
+.auth-error{font-size:13px;color:#a32d2d;text-align:center;min-height:16px;margin-bottom:6px}
+.avatar-pick{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.aap{width:28px;height:28px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+.aap.sel{border-color:var(--text)}
+
+/* ── MODAL ── */
+#modalWrap{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:flex;align-items:flex-end;justify-content:center}
+#modalWrap.hidden{display:none}
+.modal-sheet{background:var(--bg);border-radius:20px 20px 0 0;padding:20px 18px calc(20px + var(--safe-bottom));width:100%;max-width:500px}
+.modal-sheet h3{font-size:16px;font-weight:500;color:var(--text);margin-bottom:14px}
+.mf{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.mf label{font-size:13px;color:var(--text2)}
+.mf input,.mf select,.mf textarea{font-size:16px;width:100%}
+.mf textarea{resize:vertical;min-height:60px;padding:9px 12px}
+.mfrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mfoot{display:flex;gap:8px;margin-top:14px}
+.mfoot .btn-cancel{flex:1;padding:12px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);font-size:14px;color:var(--text2);font-family:var(--font)}
+.mfoot .btn-save{flex:2;padding:12px;background:#1d9e75;border:none;border-radius:var(--radius);font-size:14px;font-weight:500;color:#fff;font-family:var(--font)}
+.mfoot .btn-save:active{opacity:.85}
+.color-pick{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+.cp{width:24px;height:24px;border-radius:50%;border:3px solid transparent;cursor:pointer}
+.cp.sel{border-color:var(--text)}
+
+/* ── DM COLOR PICKER ── */
+.dm-color-bar{display:flex;align-items:center;gap:6px;padding:6px 14px;background:var(--bg2);border-bottom:0.5px solid var(--border);overflow-x:auto}
+.dcp-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:99px;border:0.5px solid var(--border);background:transparent;font-size:12px;color:var(--text2);white-space:nowrap;font-family:var(--font);flex-shrink:0}
+.dcp-btn.active{background:var(--bg);border-color:var(--border2);color:var(--text);font-weight:500}
+
+/* ── IMAGE VIEWER ── */
+#imgViewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:400;align-items:center;justify-content:center}
+#imgViewer.open{display:flex}
+#imgViewer img{max-width:95vw;max-height:90vh;object-fit:contain;border-radius:8px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(var(--bottom-nav) + 16px);left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);font-size:13px;padding:8px 18px;border-radius:99px;z-index:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+.empty{text-align:center;padding:3rem 1rem;color:var(--text3);font-size:14px}
+.empty i{font-size:36px;display:block;margin-bottom:10px}
+
+/* mention popup */
+.mention-popup{position:absolute;bottom:100%;left:0;right:0;background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--radius);overflow:hidden;z-index:60;max-height:160px;overflow-y:auto;margin-bottom:4px}
+.mention-item{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:14px;color:var(--text)}
+.mention-item:active,.mention-item.active{background:var(--bg2)}
+.mention-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0;color:#fff}
+.input-wrap{position:relative}
+
+/* profile menu */
+#profileMenu{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:250}
+#profileMenu.open{display:block}
+.profile-sheet{position:absolute;bottom:calc(var(--bottom-nav) + 8px);left:8px;right:8px;background:var(--bg);border:0.5px solid var(--border2);border-radius:16px;overflow:hidden}
+.pm-head{padding:14px 16px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;gap:10px}
+.pm-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;color:#fff;flex-shrink:0}
+.pm-name{font-size:14px;font-weight:500;color:var(--text)}
+.pm-email{font-size:12px;color:var(--text3)}
+.pm-item{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:0.5px solid var(--border);font-size:14px;color:var(--text2);background:var(--bg)}
+.pm-item:active{background:var(--bg2)}
+.pm-item.danger{color:#a32d2d}
+.pm-item i{font-size:20px}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="screen"></div>
+  <nav id="bottomNav">
+    <button class="bn active" id="bn-chat" onclick="setPage('chat')"><i class="ti ti-message-circle"></i>トーク</button>
+    <button class="bn" id="bn-tasks" onclick="setPage('tasks')"><i class="ti ti-checkbox"></i>タスク</button>
+    <button class="bn" id="bn-dash" onclick="setPage('dash')"><i class="ti ti-layout-dashboard"></i>概要</button>
+    <button class="bn" id="bn-media" onclick="setPage('media')"><i class="ti ti-photo"></i>メディア</button>
+    <button class="bn" id="bn-ai" onclick="setPage('ai')"><i class="ti ti-sparkles"></i>AI</button>
+    <button class="bn" id="bn-profile" onclick="toggleProfileMenu(event)"><i class="ti ti-user-circle"></i>自分</button>
+  </nav>
+</div>
+
+<!-- AUTH -->
+<div id="authScreen">
+  <div class="auth-sheet">
+    <div class="auth-logo"><div class="auth-logo-icon"><i class="ti ti-layout-dashboard"></i></div><span class="auth-logo-name">案件管理システム</span></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="authTabLogin" onclick="switchAuthTab('login')">ログイン</button>
+      <button class="auth-tab" id="authTabReg" onclick="switchAuthTab('register')">新規登録</button>
+    </div>
+    <div id="authError" class="auth-error"></div>
+    <div id="loginForm">
+      <div class="auth-demo"><strong>デモアカウント</strong><br>tanaka@demo.com / sato@demo.com / suzuki@demo.com<br>パスワード: <strong>demo1234</strong></div>
+      <div class="auth-field"><label>メールアドレス</label><input type="email" id="loginEmail" placeholder="example@mail.com"/></div>
+      <div class="auth-field"><label>パスワード</label><input type="password" id="loginPass" placeholder="パスワードを入力"/></div>
+      <div class="auth-remember"><input type="checkbox" id="rememberMe" checked/><label for="rememberMe">ログインを維持する（30日間）</label></div>
+      <button class="auth-submit" onclick="doLogin()">ログイン</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="auth-field"><label>名前</label><input type="text" id="regName" placeholder="例: 田中 太郎"/></div>
+      <div class="auth-field"><label>メールアドレス</label><input type="email" id="regEmail" placeholder="example@mail.com"/></div>
+      <div class="auth-field"><label>パスワード（6文字以上）</label><input type="password" id="regPass" placeholder="パスワードを設定"/></div>
+      <div class="auth-field"><label>アバターカラー</label><div class="avatar-pick" id="avatarPick"></div></div>
+      <button class="auth-submit" onclick="doRegister()">登録する</button>
+    </div>
+    <div id="authError2" class="auth-error"></div>
+    <button class="auth-guest" onclick="doGuest()"><i class="ti ti-user-question" style="font-size:15px;vertical-align:-2px;margin-right:4px"></i>ゲストとして続ける</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modalWrap" class="hidden" onclick="bgClose(event)">
+  <div class="modal-sheet">
+    <h3 id="mTitle"></h3>
+    <div id="mBody"></div>
+    <div class="mfoot">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-save" onclick="modalSave()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE VIEWER -->
+<div id="imgViewer" onclick="closeImgViewer()"><img id="imgViewerImg" src="" alt=""/></div>
+
+<!-- PROFILE MENU -->
+<div id="profileMenu" onclick="closeProfileMenu()">
+  <div class="profile-sheet" onclick="event.stopPropagation()">
+    <div class="pm-head">
+      <div class="pm-av" id="pmAv"></div>
+      <div><div class="pm-name" id="pmName"></div><div class="pm-email" id="pmEmail"></div></div>
+    </div>
+    <div class="pm-item" onclick="openProfileEdit();closeProfileMenu()"><i class="ti ti-user-edit"></i>プロフィール編集</div>
+    <div class="pm-item danger" onclick="doLogout()"><i class="ti ti-logout"></i>ログアウト</div>
+  </div>
+</div>
+
+<!-- FILE INPUT -->
+<input type="file" id="fileInput" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip" style="display:none" onchange="onFileSelected(event)"/>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONSTANTS & STATE ──
+const PAL=["#1d9e75","#534ab7","#d85a30","#185fa5","#ba7517","#d4537e","#639922","#e24b4a"];
+const PAL_NAMES={"#1d9e75":"グリーン","#534ab7":"パープル","#d85a30":"コーラル","#185fa5":"ブルー","#ba7517":"アンバー","#d4537e":"ピンク","#639922":"ライム","#e24b4a":"レッド"};
+// ── SUPABASE ──
+const SUPABASE_URL="https://slpvggfdhqzxyjljinqa.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNscHZnZ2ZkaHF6eHlqbGppbnFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NTIxNzEsImV4cCI6MjA5NjQyODE3MX0.4AQ4eCDJWKpfjCnaz_T5Td8wqDXcPVSGsK66NLZ1mjQ";
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const AU_KEY="pmsys_users_local";
+const AS_KEY="pmsys_session";
+const SESSION_DAYS=30;
+
+let state={projects:[],messages:{},page:"chat",curRoom:null,subView:"chat",msgTab:"msg",groupPanel:null,dmPeer:null,dmActiveProj:null,mediaFilter:null,filesFilter:null,fileTypeFilter:null};
+let currentUser=null;
+let apiKey=localStorage.getItem("anthropic_api_key")||"";
+let modalMode=null,editId=null,editRoom=null,newProjColor=PAL[0],regColor=PAL[0];
+let pendingAttachments=[];
+let replyToId=null;
+let mentionOpen=false,mentionQuery="",mentionStart=-1,mentionIndex=0;
+let realtimeChannel=null;
+
+function dbToMsg(m){
+  return{id:m.id,type:m.type,sender:m.sender,senderId:m.sender_id,text:m.text,task:m.task,attachments:m.attachments,replyTo:m.reply_to,projColor:m.proj_color,projId:m.proj_id,mine:m.sender_id===currentUser?.id,time:m.time};
+}
+
+async function loadData(){
+  try{
+    showToast("データを読み込み中…",3000);
+    const[projRes,msgRes,userRes]=await Promise.all([
+      sb.from("projects").select("*").order("created_at"),
+      sb.from("messages").select("*").order("created_at"),
+      sb.from("users").select("*")
+    ]);
+    if(projRes.data) state.projects=projRes.data.map(p=>({id:p.id,name:p.name,color:p.color}));
+    if(msgRes.data){
+      state.messages={};
+      msgRes.data.forEach(m=>{
+        if(!state.messages[m.room_id]) state.messages[m.room_id]=[];
+        state.messages[m.room_id].push(dbToMsg(m));
+      });
+    }
+    if(userRes.data) _cachedUsers=userRes.data;
+  }catch(e){console.error("loadData",e);showToast("読み込みエラー");}
+}
+
+async function saveData(){} // Supabaseでは個別保存するので不使用
+
+async function saveMessage(roomId,msgObj){
+  const{error}=await sb.from("messages").insert({
+    id:msgObj.id,room_id:roomId,sender:msgObj.sender,sender_id:currentUser?.id||"guest",
+    type:msgObj.type,text:msgObj.text||null,task:msgObj.task||null,
+    attachments:msgObj.attachments||null,reply_to:msgObj.replyTo||null,
+    proj_color:msgObj.projColor||null,proj_id:msgObj.projId||null,time:msgObj.time
+  });
+  if(error) console.error("saveMessage",error);
+}
+
+async function saveProject(proj){
+  const{error}=await sb.from("projects").upsert({id:proj.id,name:proj.name,color:proj.color,created_by:currentUser?.id||"guest"});
+  if(error) console.error("saveProject",error);
+}
+
+async function deleteProject(id){
+  await sb.from("messages").delete().eq("room_id",id);
+  await sb.from("projects").delete().eq("id",id);
+}
+
+async function updateTaskInDb(msgId,task){
+  const{error}=await sb.from("messages").update({task}).eq("id",msgId);
+  if(error) console.error("updateTask",error);
+}
+
+async function updateMsgProjColor(msgId,projColor,projId){
+  await sb.from("messages").update({proj_color:projColor,proj_id:projId}).eq("id",msgId);
+}
+
+function subscribeRealtime(){
+  if(realtimeChannel) sb.removeChannel(realtimeChannel);
+  realtimeChannel=sb.channel("realtime-all")
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{
+      const m=dbToMsg(payload.new);
+      const roomId=payload.new.room_id;
+      if(!state.messages[roomId]) state.messages[roomId]=[];
+      if(!state.messages[roomId].find(x=>String(x.id)===String(m.id))){
+        state.messages[roomId].push(m);
+        if(state.page==="chat"&&state.curRoom===roomId) render();
+        else if(!m.mine) showToast(`${m.sender}: ${(m.text||"[タスク]").slice(0,20)}`);
+      }
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"messages"},payload=>{
+      const updated=dbToMsg(payload.new);
+      const roomId=payload.new.room_id;
+      if(state.messages[roomId]){
+        const idx=state.messages[roomId].findIndex(m=>String(m.id)===String(updated.id));
+        if(idx>=0){state.messages[roomId][idx]={...state.messages[roomId][idx],...updated};render();}
+      }
+    })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"projects"},payload=>{
+      const p=payload.new;
+      if(!state.projects.find(x=>x.id===p.id)){state.projects.push({id:p.id,name:p.name,color:p.color});render();}
+    })
+    .on("postgres_changes",{event:"DELETE",schema:"public",table:"projects"},payload=>{
+      state.projects=state.projects.filter(p=>p.id!==payload.old.id);
+      if(state.curRoom===payload.old.id){state.curRoom=null;}
+      render();
+    })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"users"},payload=>{
+      if(_cachedUsers&&!_cachedUsers.find(u=>u.id===payload.new.id)){
+        _cachedUsers.push(payload.new);
+        if(state.page==="chat"&&!state.curRoom) render();
+        else renderSidebarDmSection();
+      }
+    })
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"users"},payload=>{
+      if(_cachedUsers){
+        const idx=_cachedUsers.findIndex(u=>u.id===payload.new.id);
+        if(idx>=0) _cachedUsers[idx]=payload.new;
+      }
+    })
+    .subscribe();
+}
+
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function nowTime(){return new Date().toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});}
+function showToast(msg,ms=1800){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),ms);}
+
+// ── AUTH ──
+// ── USER STORE (Supabase) ──
+let _cachedUsers=null;
+
+async function loadUsers(){
+  if(_cachedUsers) return _cachedUsers;
+  try{
+    const{data,error}=await sb.from("users").select("*");
+    if(error) throw error;
+    _cachedUsers=data||[];
+    return _cachedUsers;
+  }catch(e){
+    // フォールバック: ローカル
+    try{return JSON.parse(localStorage.getItem(AU_KEY)||"[]");}catch(e2){return[];}
+  }
+}
+
+async function saveUser(user){
+  _cachedUsers=null; // キャッシュをクリア
+  const row={id:user.id,name:user.name,email:user.email||null,password:user.password||null,color:user.color,is_guest:user.isGuest||false,created_at:user.createdAt||new Date().toISOString()};
+  const{error}=await sb.from("users").upsert(row);
+  if(error) console.error("saveUser error",error);
+  // ローカルにも保存（オフライン対応）
+  try{
+    const local=JSON.parse(localStorage.getItem(AU_KEY)||"[]");
+    const idx=local.findIndex(u=>u.id===user.id);
+    if(idx>=0) local[idx]=user; else local.push(user);
+    localStorage.setItem(AU_KEY,JSON.stringify(local));
+  }catch(e){}
+}
+
+function dbToUser(row){
+  return{id:row.id,name:row.name,email:row.email||"",password:row.password||"",color:row.color,isGuest:row.is_guest||false,createdAt:row.created_at};
+}
+
+function loadSession(){try{const raw=localStorage.getItem(AS_KEY);if(!raw)return null;const s=JSON.parse(raw);if(s.expiresAt&&Date.now()>s.expiresAt){clearSession();return null;}return s.user||s;}catch(e){return null;}}
+function saveSession(u,days=SESSION_DAYS){localStorage.setItem(AS_KEY,JSON.stringify({user:u,expiresAt:Date.now()+days*86400*1000}));}
+function clearSession(){localStorage.removeItem(AS_KEY);}
+
+function switchAuthTab(tab){
+  document.getElementById("authTabLogin").className="auth-tab"+(tab==="login"?" active":"");
+  document.getElementById("authTabReg").className="auth-tab"+(tab==="register"?" active":"");
+  document.getElementById("loginForm").style.display=tab==="login"?"":"none";
+  document.getElementById("registerForm").style.display=tab==="register"?"":"none";
+  document.getElementById("authError").textContent="";
+}
+function setAuthError(msg){document.getElementById("authError").textContent=msg;}
+
+async function doLogin(){
+  const email=document.getElementById("loginEmail").value.trim().toLowerCase();
+  const pass=document.getElementById("loginPass").value;
+  const remember=document.getElementById("rememberMe")?.checked!==false;
+  if(!email||!pass){setAuthError("メールとパスワードを入力してください");return;}
+  showToast("確認中…",3000);
+  try{
+    const users=await loadUsers();
+    const dbUser=users.find(u=>(u.email||u.email_address)===email&&(u.password||u.password_hash)===pass);
+    if(!dbUser){setAuthError("メールアドレスまたはパスワードが違います");return;}
+    currentUser=dbUser.is_guest!==undefined?dbToUser(dbUser):dbUser;
+    if(remember)saveSession(currentUser);
+    hideAuth();
+  }catch(e){setAuthError("ログインに失敗しました。もう一度お試しください");}
+}
+
+async function doRegister(){
+  const name=document.getElementById("regName").value.trim();
+  const email=document.getElementById("regEmail").value.trim().toLowerCase();
+  const pass=document.getElementById("regPass").value;
+  if(!name){setAuthError("名前を入力してください");return;}
+  if(!email||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){setAuthError("有効なメールアドレスを入力してください");return;}
+  if(pass.length<6){setAuthError("パスワードは6文字以上です");return;}
+  showToast("登録中…",3000);
+  try{
+    const users=await loadUsers();
+    if(users.find(u=>u.email===email)){setAuthError("このメールアドレスは登録済みです");return;}
+    const user={id:"u"+Date.now(),name,email,password:pass,color:regColor,isGuest:false,createdAt:new Date().toISOString()};
+    await saveUser(user);
+    currentUser=user;
+    saveSession(user);
+    hideAuth();
+  }catch(e){setAuthError("登録に失敗しました。もう一度お試しください");}
+}
+
+function doGuest(){
+  const num=Math.floor(Math.random()*9000)+1000;
+  currentUser={id:"g"+Date.now(),name:"ゲスト"+num,email:"",color:PAL[Math.floor(Math.random()*PAL.length)],isGuest:true};
+  hideAuth();
+}
+function doLogout(){currentUser=null;_cachedUsers=null;clearSession();closeProfileMenu();showAuth();}
+function showAuth(){document.getElementById("authScreen").classList.remove("hidden");renderAvatarPick();}
+function hideAuth(){
+  document.getElementById("authScreen").classList.add("hidden");
+  updateNavProfile();
+  loadData().then(()=>{subscribeRealtime();render();});
+}
+function renderAvatarPick(){
+  const el=document.getElementById("avatarPick");
+  if(!el)return;
+  el.innerHTML=PAL.map(c=>`<div class="aap${c===regColor?" sel":""}" style="background:${c}" onclick="pickRegColor('${c}')"></div>`).join("");
+}
+function pickRegColor(c){regColor=c;document.querySelectorAll(".aap").forEach(el=>el.className="aap"+((el.getAttribute("onclick")||"").includes(`'${c}'`)?" sel":""));}
+function updateNavProfile(){
+  const btn=document.getElementById("bn-profile");
+  if(!btn||!currentUser)return;
+  btn.innerHTML=`<div style="width:26px;height:26px;border-radius:50%;background:${currentUser.color};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;margin:0 auto 1px">${currentUser.name[0]}</div><span style="font-size:10px">${esc(currentUser.name)}</span>`;
+}
+function toggleProfileMenu(e){
+  e.stopPropagation();
+  const m=document.getElementById("profileMenu");
+  if(m.classList.contains("open")){closeProfileMenu();return;}
+  if(currentUser){
+    document.getElementById("pmAv").style.background=currentUser.color;
+    document.getElementById("pmAv").textContent=currentUser.name[0];
+    document.getElementById("pmName").textContent=currentUser.name+(currentUser.isGuest?" (ゲスト)":"");
+    document.getElementById("pmEmail").textContent=currentUser.email||"ゲストアカウント";
+  }
+  m.classList.add("open");
+}
+function closeProfileMenu(){document.getElementById("profileMenu").classList.remove("open");}
+function openProfileEdit(){
+  modalMode="editProfile";
+  document.getElementById("mTitle").textContent="プロフィール編集";
+  document.getElementById("mBody").innerHTML=`
+    <div class="mf"><label>名前</label><input type="text" id="epName" value="${esc(currentUser?.name||"")}"/></div>
+    ${!currentUser?.isGuest?`<div class="mf"><label>メールアドレス</label><input type="email" id="epEmail" value="${esc(currentUser?.email||"")}"/></div>
+    <div class="mf"><label>新しいパスワード（変更する場合）</label><input type="password" id="epPass" placeholder="変更しない場合は空白"/></div>`:""}
+    <div class="mf"><label>アバターカラー</label><div class="color-pick" id="epColorPick">${PAL.map(c=>`<div class="cp${c===currentUser?.color?" sel":""}" style="background:${c}" onclick="pickProfileColor('${c}')"></div>`).join("")}</div></div>`;
+  openModal();
+}
+function pickProfileColor(c){
+  if(currentUser)currentUser.color=c;
+  document.querySelectorAll("#epColorPick .cp").forEach(el=>el.className="cp"+((el.getAttribute("onclick")||"").includes(`'${c}'`)?" sel":""));
+}
+
+// ── DM ──
+function getDmKey(a,b){return"dm:"+[a,b].sort().join("_");}
+function isDmRoom(id){return(id||"").startsWith("dm:");}
+function getDmPeer(roomId){
+  if(!isDmRoom(roomId)||!currentUser)return null;
+  const ids=roomId.replace("dm:","").split("_");
+  const peerId=ids.find(id=>id!==currentUser.id);
+  if(!peerId)return null;
+  const u=(_cachedUsers||[]).find(u=>u.id===peerId);
+  return u?(u.is_guest!==undefined?dbToUser(u):u):null;
+}
+async function openDm(userId){
+  const users=await loadUsers();
+  const peer=users.find(u=>u.id===userId);
+  if(!peer||!currentUser)return;
+  const peerUser=peer.is_guest!==undefined?dbToUser(peer):peer;
+  const key=getDmKey(currentUser.id,userId);
+  if(!state.messages[key])state.messages[key]=[];
+  state.dmPeer=peerUser;state.curRoom=key;state.curColorFilter=null;state.page="chat";state.subView="chat";state.groupPanel=null;
+  render();
+}
+
+// ── HELPERS ──
+function getAllAttachments(){
+  const result=[];
+  state.projects.forEach(proj=>{(state.messages[proj.id]||[]).forEach(msg=>{if(msg.attachments&&msg.attachments.length){msg.attachments.forEach(att=>{result.push({...att,projId:proj.id,projName:proj.name,projColor:proj.color,sender:msg.sender,time:msg.time,msgId:msg.id});});}});});
+  return result;
+}
+function getFileExt(name){return(name||"").split(".").pop().toLowerCase();}
+function getFileIcon(name,type){
+  if(type&&type.startsWith("image/"))return{icon:"ti-photo",bg:"#e6f1fb",fg:"#0c447c"};
+  const ext=getFileExt(name);
+  if(["pdf"].includes(ext))return{icon:"ti-file-type-pdf",bg:"#fcebeb",fg:"#a32d2d"};
+  if(["xls","xlsx","csv"].includes(ext))return{icon:"ti-file-type-xls",bg:"#eaf3de",fg:"#3b6d11"};
+  if(["doc","docx"].includes(ext))return{icon:"ti-file-type-doc",bg:"#e6f1fb",fg:"#0c447c"};
+  if(["ppt","pptx"].includes(ext))return{icon:"ti-file-type-ppt",bg:"#faece7",fg:"#993c1d"};
+  if(["zip","rar"].includes(ext))return{icon:"ti-file-zip",bg:"#faeeda",fg:"#633806"};
+  return{icon:"ti-file",bg:"var(--bg2)",fg:"var(--text2)"};
+}
+function extractLinks(msgs){
+  const links=[];const seen=new Set();
+  msgs.forEach(m=>{(m.text||"").match(/https?:\/\/[^\s）】」』\)]+/g)?.forEach(url=>{
+    if(seen.has(url))return;seen.add(url);
+    let domain="";try{domain=new URL(url).hostname.replace(/^www\./,"");}catch(e){}
+    links.push({url,domain,sender:m.sender,time:m.time});
+  });});
+  return links;
+}
+
+// ── ATTACHMENTS ──
+let attachTarget="msg";
+function triggerFileInput(target="msg"){attachTarget=target;document.getElementById("fileInput").value="";document.getElementById("fileInput").click();}
+async function onFileSelected(e){
+  const files=Array.from(e.target.files||[]);
+  for(const f of files){
+    showToast("アップロード中…",5000);
+    try{
+      // Supabase Storageにアップロード
+      const path=`${currentUser?.id||"guest"}/${Date.now()}_${f.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+      const{data,error}=await sb.storage.from("attachments").upload(path,f,{cacheControl:"3600",upsert:false});
+      if(error) throw error;
+      // 公開URLを取得
+      const{data:urlData}=sb.storage.from("attachments").getPublicUrl(path);
+      pendingAttachments.push({name:f.name,type:f.type,size:f.size,url:urlData.publicUrl,path});
+      showToast("アップロード完了");
+    }catch(err){
+      console.error("upload error",err);
+      // フォールバック: base64で保存
+      const dataUrl=await readFileAsDataUrl(f);
+      pendingAttachments.push({name:f.name,type:f.type,size:f.size,dataUrl});
+      showToast("ローカル保存しました");
+    }
+  }
+  renderAttachPreview();
+}
+function readFileAsDataUrl(file){return new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(file);});}
+function getAttSrc(a){return a.url||a.dataUrl||"";}
+function renderAttachPreview(){
+  const el=document.getElementById("attachPreview");
+  if(!el)return;
+  if(!pendingAttachments.length){el.style.display="none";el.innerHTML="";return;}
+  el.style.display="flex";
+  el.innerHTML=pendingAttachments.map((a,i)=>{
+    const isImg=a.type&&a.type.startsWith("image/");
+    const src=getAttSrc(a);
+    return`<div class="ap-item">${isImg&&src?`<img class="ap-img" src="${src}" alt=""/>`:`<i class="ti ti-file" style="font-size:16px;flex-shrink:0"></i>`}<span class="ap-name">${esc(a.name)}</span><button class="ap-rm" onclick="removeAttachment(${i})"><i class="ti ti-x"></i></button></div>`;
+  }).join("");
+}
+function removeAttachment(i){
+  const a=pendingAttachments[i];
+  if(a.path) sb.storage.from("attachments").remove([a.path]);
+  pendingAttachments.splice(i,1);
+  renderAttachPreview();
+}
+function renderAttachments(attachments){
+  if(!attachments||!attachments.length)return"";
+  return attachments.map(a=>{
+    const isImg=a.type&&a.type.startsWith("image/");
+    const src=getAttSrc(a);
+    const sizeStr=a.size>1024*1024?`${(a.size/1024/1024).toFixed(1)}MB`:`${Math.round(a.size/1024)}KB`;
+    if(isImg&&src) return`<img class="att-image" src="${src}" alt="${esc(a.name)}" onclick="openImgViewer('${src.replace(/'/g,"\\'")}')"/>`;
+    if(src) return`<a class="att-file" href="${src}" target="_blank" rel="noopener"><i class="ti ti-file-download" style="font-size:16px;flex-shrink:0"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(a.name)}</span><span style="font-size:10px;opacity:.7;flex-shrink:0">${sizeStr}</span></a>`;
+    return`<div class="att-file"><i class="ti ti-file" style="font-size:16px;flex-shrink:0"></i><span>${esc(a.name)}</span></div>`;
+  }).join("");
+}
+function openImgViewer(src){document.getElementById("imgViewerImg").src=src;document.getElementById("imgViewer").classList.add("open");}
+function closeImgViewer(){document.getElementById("imgViewer").classList.remove("open");}
+function dlFile(dataUrl,name){const a=document.createElement("a");a.href=dataUrl;a.download=name;a.click();}
+
+// ── REPLY ──
+function startReply(msgId){
+  replyToId=msgId;
+  const found=findMsg(msgId);if(!found)return;
+  const m=found.m;
+  const bar=document.getElementById("replyBar");
+  if(!bar){render();return;}
+  document.getElementById("replyBarSender").textContent=m.sender;
+  document.getElementById("replyBarText").textContent=m.type==="task"?"[タスク] "+m.task.title:(m.text||"[添付]");
+  bar.style.display="flex";
+  const proj=state.projects.find(p=>p.id===state.curRoom);
+  if(proj)bar.style.borderLeftColor=proj.color;
+  document.getElementById("msgIn")?.focus();
+}
+function clearReply(){replyToId=null;const bar=document.getElementById("replyBar");if(bar)bar.style.display="none";}
+function scrollToMsg(id){
+  const el=document.getElementById("msg-"+id);
+  if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.style.transition="background .3s";el.style.background="var(--bg3)";setTimeout(()=>{el.style.background="";},1200);}
+}
+function findMsg(id){
+  for(const[rid,msgs]of Object.entries(state.messages)){const m=msgs.find(x=>String(x.id)===String(id));if(m)return{m,rid};}
+  return null;
+}
+
+// ── MENTION ──
+function getMembers(){
+  const names=new Set();
+  loadUsers().forEach(u=>{if(u.id!==currentUser?.id)names.add(u.name);});
+  if(state.curRoom){(state.messages[state.curRoom]||[]).forEach(m=>{if(m.sender&&m.sender!==(currentUser?.name||"自分"))names.add(m.sender);});}
+  return Array.from(names);
+}
+function onMsgInput(e){
+  const input=e.target,val=input.value,pos=input.selectionStart;
+  const before=val.slice(0,pos),atIdx=before.lastIndexOf("@");
+  if(atIdx>=0){const q=before.slice(atIdx+1);if(!/\s/.test(q)){mentionQuery=q;mentionStart=atIdx;mentionIndex=0;showMentionPopup(q);return;}}
+  closeMentionPopup();
+}
+function showMentionPopup(q){
+  const members=getMembers().filter(n=>n.toLowerCase().includes(q.toLowerCase()));
+  const popup=document.getElementById("mentionPopup");
+  if(!popup||!members.length){closeMentionPopup();return;}
+  mentionOpen=true;
+  const proj=state.projects.find(p=>p.id===state.curRoom);
+  const c=proj?.color||"#888";
+  popup.style.display="block";
+  popup.innerHTML=members.map((n,i)=>`<div class="mention-item${i===mentionIndex?" active":""}" onclick="selectMention('${esc(n)}')"><div class="mention-av" style="background:${c}">${n[0]}</div><span>@${esc(n)}</span></div>`).join("");
+}
+function closeMentionPopup(){mentionOpen=false;const p=document.getElementById("mentionPopup");if(p)p.style.display="none";}
+function moveMention(d){const m=getMembers().filter(n=>n.toLowerCase().includes(mentionQuery.toLowerCase()));mentionIndex=Math.max(0,Math.min(m.length-1,mentionIndex+d));showMentionPopup(mentionQuery);}
+function insertMention(){const m=getMembers().filter(n=>n.toLowerCase().includes(mentionQuery.toLowerCase()));if(m[mentionIndex])selectMention(m[mentionIndex]);}
+function selectMention(name){
+  const input=document.getElementById("msgIn");if(!input)return;
+  const val=input.value,before=val.slice(0,mentionStart),after=val.slice(input.selectionStart);
+  input.value=before+"@"+name+" "+after;
+  input.focus();closeMentionPopup();
+}
+function mentionUser(name){
+  const inp=document.getElementById("msgIn");if(!inp)return;
+  const v=inp.value;inp.value=v+(v&&!v.endsWith(" ")?" ":"")+"@"+name+" ";inp.focus();
+}
+function renderTextWithMentions(text){
+  if(!text)return"";
+  return esc(text).replace(/@([^\s@,!?。、]+)/g,(m,name)=>`<span class="mention">@${name}</span>`);
+}
+
+// ── MSG HTML ──
+function getReplyQuoteHTML(replyTo,projMsgs,accentColor,isMine){
+  if(!replyTo)return"";
+  const orig=projMsgs.find(m=>String(m.id)===String(replyTo));
+  if(!orig)return"";
+  const preview=orig.type==="task"?"[タスク] "+orig.task.title:(orig.text||"[添付ファイル]");
+  return`<div class="reply-quote" onclick="scrollToMsg('${replyTo}')" style="border-left-color:${isMine?"rgba(255,255,255,.55)":accentColor}"><div class="rq-sender">${esc(orig.sender)}</div><div class="rq-text" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(preview)}</div></div>`;
+}
+function msgHTML(m,c,projMsgs){
+  const attH=renderAttachments(m.attachments);
+  const rqH=getReplyQuoteHTML(m.replyTo,projMsgs||[],c,m.mine);
+  const textH=renderTextWithMentions(m.text);
+  return`<div class="mrow${m.mine?" mine":""}" id="msg-${m.id}">
+    <div class="av-sm" style="background:${m.mine?(currentUser?.color||c):c}">${m.sender?m.sender[0]:"?"}</div>
+    <div class="bw${m.mine?" mine":""}">
+      ${!m.mine?`<span class="sn">${esc(m.sender)}</span>`:""}
+      <div class="bub ${m.mine?"mine":"other"}" style="${m.mine?`background:${c}`:""}">
+        ${rqH}${attH?`<div class="msg-attachments">${attH}</div>`:""}${textH}
+      </div>
+      <span class="ts">${m.time}</span>
+    </div>
+    <div class="msg-actions" style="${m.mine?"right:0":"left:36px"}">
+      <button class="mac-btn" onclick="startReply('${m.id}')" title="返信"><i class="ti ti-corner-up-left"></i></button>
+      ${!m.mine?`<button class="mac-btn" onclick="mentionUser('${esc(m.sender)}')" title="メンション"><i class="ti ti-at"></i></button>`:""}
+    </div>
+  </div>`;
+}
+function taskHTML(m,c,projMsgs){
+  const t=m.task,today=new Date().toISOString().slice(0,10);
+  const ov=!t.done&&t.due&&t.due<today;
+  const df=t.due?t.due.replace(/\d+-(\d+)-(\d+)/,"$1/$2"):"";
+  const rqH=getReplyQuoteHTML(m.replyTo,projMsgs||[],c,m.mine);
+  const attH=renderAttachments(m.attachments);
+  return`<div class="mrow${m.mine?" mine":""}" id="msg-${m.id}">
+    <div class="av-sm" style="background:${m.mine?(currentUser?.color||c):c}">${m.sender?m.sender[0]:"?"}</div>
+    <div class="bw${m.mine?" mine":""}">
+      ${!m.mine?`<span class="sn">${esc(m.sender)}</span>`:""}
+      <div class="bub taskb" style="min-width:200px;border-left:3px solid ${c}">
+        ${rqH?`<div style="padding:6px 10px 0">${rqH}</div>`:""}
+        ${attH?`<div class="msg-attachments" style="padding:8px 12px 0">${attH}</div>`:""}
+        <div class="ti3">
+          <div class="ttl3${t.done?" done":""}"><i class="ti ti-checkbox" style="font-size:14px;vertical-align:-2px;margin-right:4px;color:${t.done?"#1d9e75":"var(--text3)"}"></i>${esc(t.title)}</div>
+          <div class="tmeta3">
+            <span class="pill ${{high:"ph",med:"pm",low:"pl"}[t.priority]}">${{high:"高",med:"中",low:"低"}[t.priority]}</span>
+            ${t.assignee?`<span style="font-size:12px;color:var(--text2)">${esc(t.assignee)}</span>`:""}
+            ${df?`<span style="font-size:12px;color:${ov?"#a32d2d":"var(--text2)"}">${df}${ov?" !":""}</span>`:""}
+          </div>
+          ${t.memo?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${esc(t.memo)}</div>`:""}
+        </div>
+        <div class="tbtns3">
+          <button class="tbtn3 ck" onclick="toggleTask('${m.id}')"><i class="ti ti-${t.done?"rotate-clockwise":"check"}" style="font-size:15px"></i>${t.done?"戻す":"完了"}</button>
+          <button class="tbtn3" onclick="openEditTask('${m.id}')"><i class="ti ti-edit" style="font-size:15px"></i>編集</button>
+        </div>
+      </div>
+      <span class="ts">${m.time}</span>
+    </div>
+    <div class="msg-actions" style="${m.mine?"right:0":"left:36px"}">
+      <button class="mac-btn" onclick="startReply('${m.id}')"><i class="ti ti-corner-up-left"></i></button>
+    </div>
+  </div>`;
+}
+function toggleTask(id){
+  for(const msgs of Object.values(state.messages)){const m=msgs.find(x=>String(x.id)===String(id));if(m&&m.task){m.task.done=!m.task.done;updateTaskInDb(id,m.task);break;}}
+  render();
+}
+function openEditTask(id){
+  editId=id;
+  const found=findMsg(id);if(!found)return;
+  editRoom=found.rid;const t=found.m.task;
+  modalMode="editTask";
+  document.getElementById("mTitle").textContent="タスクを編集";
+  document.getElementById("mBody").innerHTML=`
+    <div class="mf"><label>タイトル</label><input type="text" id="eT" value="${esc(t.title)}"/></div>
+    <div class="mfrow"><div class="mf"><label>担当者</label><input type="text" id="eA" value="${esc(t.assignee||"")}"/></div><div class="mf"><label>期限</label><input type="date" id="eD" value="${t.due||""}"/></div></div>
+    <div class="mf"><label>優先度</label><select id="eP"><option value="high"${t.priority==="high"?" selected":""}>高</option><option value="med"${t.priority==="med"?" selected":""}>中</option><option value="low"${t.priority==="low"?" selected":""}>低</option></select></div>
+    <div class="mf"><label>メモ</label><textarea id="eMe">${esc(t.memo||"")}</textarea></div>`;
+  openModal();
+}
+
+// ── DM AI COLOR ──
+function setDmActiveProj(projId){state.dmActiveProj=projId||null;render();}
+async function detectProjColorForMsg(text,msgId){
+  if(!apiKey||!text||!state.projects.length)return;
+  const projList=state.projects.map(p=>`- ${p.name} (color: ${p.color})`).join("\n");
+  const prompt=`以下のメッセージがどの案件に関する内容かを判定し、最も関連する案件のcolorコードのみを返してください。関連する案件がなければ "none" と返してください。他のテキストは不要です。\n\n案件一覧:\n${projList}\n\nメッセージ: "${text}"\n\n回答（例: #1d9e75 または none）:`;
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:20,messages:[{role:"user",content:prompt}]})});
+    const data=await res.json();if(data.error)return;
+    const detected=(data.content[0]?.text||"").trim().toLowerCase();
+    if(detected==="none"||!detected.startsWith("#"))return;
+    const proj=state.projects.find(p=>p.color.toLowerCase()===detected);
+    if(!proj)return;
+    const room=state.messages[state.curRoom]||[];
+    const msg=room.find(m=>String(m.id)===String(msgId));
+    if(msg){msg.projColor=proj.color;msg.projId=proj.id;updateMsgProjColor(msgId,proj.color,proj.id);}
+    const bubbleEl=document.querySelector(`#msg-${msgId} .bub.mine`);
+    if(bubbleEl)bubbleEl.style.background=proj.color;
+    const sendBtn=document.getElementById("dmSendBtn");
+    if(sendBtn)sendBtn.style.background=proj.color;
+    showToast(`AI判定: ${proj.name}`);
+  }catch(e){}
+}
+
+// ── SEND ──
+function sendMsg(){
+  const v=document.getElementById("msgIn")?.value.trim();
+  const atts=[...pendingAttachments];
+  if(!v&&!atts.length||!state.curRoom)return;
+  if(!state.messages[state.curRoom])state.messages[state.curRoom]=[];
+  const senderName=currentUser?.name||"自分";
+  const msgId=Date.now();
+  let projColor=undefined,projId=undefined;
+  if(isDmRoom(state.curRoom)&&state.dmActiveProj){
+    const proj=state.projects.find(p=>p.id===state.dmActiveProj);
+    if(proj){projColor=proj.color;projId=proj.id;}
+  }
+  const msgObj={id:msgId,type:"msg",sender:senderName,text:v,time:nowTime(),mine:true,
+    attachments:atts.length?atts:undefined,replyTo:replyToId||undefined,projColor,projId};
+  state.messages[state.curRoom].push(msgObj);
+  document.getElementById("msgIn").value="";
+  pendingAttachments=[];clearReply();closeMentionPopup();
+  saveMessage(state.curRoom,msgObj);
+  render();
+  if(isDmRoom(state.curRoom)&&!state.dmActiveProj&&apiKey&&v)detectProjColorForMsg(v,msgId);
+}
+function sendTask(){
+  const title=document.getElementById("tT")?.value.trim();
+  const atts=[...pendingAttachments];
+  if(!title||!state.curRoom)return;
+  if(!state.messages[state.curRoom])state.messages[state.curRoom]=[];
+  const senderName=currentUser?.name||"自分";
+  const msgId=Date.now();
+  const taskObj={title,assignee:document.getElementById("tA").value.trim(),due:document.getElementById("tD").value,priority:document.getElementById("tP").value,memo:document.getElementById("tM").value.trim(),done:false};
+  const msgObj={id:msgId,type:"task",sender:senderName,mine:true,time:nowTime(),attachments:atts.length?atts:undefined,replyTo:replyToId||undefined,task:taskObj};
+  state.messages[state.curRoom].push(msgObj);
+  ["tT","tA","tD","tM"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+  pendingAttachments=[];clearReply();
+  saveMessage(state.curRoom,msgObj);
+  render();
+}
+function setupInputListeners(){
+  const mi=document.getElementById("msgIn");
+  if(!mi)return;
+  mi.addEventListener("keydown",e=>{
+    if(e.key==="Enter"&&!e.shiftKey&&!mentionOpen){e.preventDefault();sendMsg();}
+    if(e.key==="Escape"){clearReply();closeMentionPopup();}
+    if(e.key==="ArrowDown"&&mentionOpen){e.preventDefault();moveMention(1);}
+    if(e.key==="ArrowUp"&&mentionOpen){e.preventDefault();moveMention(-1);}
+    if((e.key==="Enter"||e.key==="Tab")&&mentionOpen){e.preventDefault();insertMention();}
+  });
+  mi.addEventListener("input",onMsgInput);
+}
+function setupDrop(){
+  const area=document.getElementById("msgArea");if(!area)return;
+  area.addEventListener("dragover",e=>{e.preventDefault();});
+  area.addEventListener("drop",async e=>{
+    e.preventDefault();
+    const files=Array.from(e.dataTransfer.files||[]);
+    for(const f of files){const dataUrl=await readFileAsDataUrl(f);pendingAttachments.push({name:f.name,type:f.type,size:f.size,dataUrl});}
+    renderAttachPreview();
+  });
+}
+
+// ── RENDER PAGES ──
+function render(){renderNav();renderScreen();}
+
+function renderNav(){
+  ["chat","tasks","dash","media","ai"].forEach(p=>{
+    const el=document.getElementById("bn-"+p);
+    if(el)el.classList.toggle("active",state.page===p);
+  });
+}
+
+function renderScreen(){
+  const el=document.getElementById("screen");
+  if(state.page==="chat"){
+    if(state.curRoom&&!state.groupPanel) renderChatScreen(el);
+    else if(state.curRoom&&state.groupPanel) renderGroupPanelScreen(el);
+    else renderTalkListScreen(el);
+  } else if(state.page==="tasks") renderTasksScreen(el);
+  else if(state.page==="dash") renderDashScreen(el);
+  else if(state.page==="media") renderMediaScreen(el);
+  else if(state.page==="ai") renderAIScreen(el);
+}
+
+// ── TALK LIST ──
+function renderTalkListScreen(el){
+  const allUsers=(_cachedUsers||[]).filter(u=>u.id!==currentUser?.id&&!u.is_guest).map(u=>u.is_guest!==undefined?dbToUser(u):u);
+  let html=`<div class="topbar"><span class="tb-title">トーク</span><button class="tb-btn" onclick="openNewProjModal()"><i class="ti ti-plus"></i></button></div><div class="list-view">`;
+  html+=`<div class="list-section-header">案件</div>`;
+  state.projects.forEach(p=>{
+    const msgs=state.messages[p.id]||[];
+    const open=msgs.filter(m=>m.type==="task"&&!m.task.done).length;
+    const last=msgs[msgs.length-1];
+    const lastText=last?(last.type==="task"?"[タスク] "+last.task.title:(last.text||"")).slice(0,24):"";
+    html+=`<div>
+      <div class="list-item" onclick="selectRoom('${p.id}')">
+        <div class="li-av" style="background:${p.color}">${p.name[0]}</div>
+        <div class="li-body"><div class="li-name">${esc(p.name)}</div>${lastText?`<div class="li-last">${esc(lastText)}</div>`:""}</div>
+        <div class="li-right">${open>0?`<div class="li-badge" style="background:${p.color}">${open}</div>`:`<div class="li-dot" style="background:${p.color}"></div>`}</div>
+      </div>
+      <div class="li-sub-btns">
+        <button class="li-sub-btn" onclick="openGroupPanel('${p.id}','media')"><i class="ti ti-photo" style="font-size:13px"></i>メディア</button>
+        <button class="li-sub-btn" onclick="openGroupPanel('${p.id}','links')"><i class="ti ti-link" style="font-size:13px"></i>リンク</button>
+        <button class="li-sub-btn" onclick="openGroupPanel('${p.id}','files')"><i class="ti ti-files" style="font-size:13px"></i>ファイル</button>
+      </div>
+    </div>`;
+  });
+  html+=`<div class="list-section-header">ダイレクトメッセージ</div>`;
+  if(allUsers.length){
+    allUsers.forEach(u=>{
+      const key=currentUser?getDmKey(currentUser.id,u.id):"";
+      const msgs=key?(state.messages[key]||[]):[];
+      const last=msgs[msgs.length-1];
+      const lastText=last?(last.type==="task"?"[タスク]":(last.text||"")).slice(0,24):"";
+      html+=`<div>
+        <div class="list-item" onclick="openDm('${u.id}')">
+          <div class="li-av" style="background:${u.color}">${u.name[0]}</div>
+          <div class="li-body"><div class="li-name">${esc(u.name)}</div>${lastText?`<div class="li-last">${esc(lastText)}</div>`:""}</div>
+          <div class="li-right"><div class="li-dot" style="background:${u.color}"></div></div>
+        </div>
+        ${key?`<div class="li-sub-btns">
+          <button class="li-sub-btn" onclick="openGroupPanel('${key}','media')"><i class="ti ti-photo" style="font-size:13px"></i>メディア</button>
+          <button class="li-sub-btn" onclick="openGroupPanel('${key}','links')"><i class="ti ti-link" style="font-size:13px"></i>リンク</button>
+          <button class="li-sub-btn" onclick="openGroupPanel('${key}','files')"><i class="ti ti-files" style="font-size:13px"></i>ファイル</button>
+        </div>`:""}
+      </div>`;
+    });
+  } else {
+    html+=`<div style="padding:12px 16px;font-size:13px;color:var(--text3)">他のユーザーが登録するとここに表示されます</div>`;
+  }
+  html+=`</div>`;
+  el.innerHTML=html;
+}
+
+// ── CHAT SCREEN ──
+function buildInputHTML(c,isDm,peer){
+  const meColor=currentUser?.color||c;
+  const placeholder=isDm?`${esc(peer?.name||"")}にメッセージ…`:"メッセージを入力…";
+  return`<div class="input-area" id="inputArea">
+    <div id="replyBar" style="display:none" class="reply-bar" style="border-left:3px solid ${c}">
+      <i class="ti ti-corner-up-left" style="font-size:14px;flex-shrink:0;color:${c}"></i>
+      <span class="rb-sender" id="replyBarSender"></span>
+      <span class="rb-text" id="replyBarText"></span>
+      <button class="rb-close" onclick="clearReply()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="attachPreview" class="attach-preview" style="display:none"></div>
+    <div class="input-wrap">
+      <div id="mentionPopup" class="mention-popup" style="display:none"></div>
+      <div class="input-row">
+        <button class="attach-btn" onclick="triggerFileInput()"><i class="ti ti-paperclip"></i></button>
+        <textarea class="msg-input" id="msgIn" placeholder="${placeholder}" rows="1"></textarea>
+        <button class="send-btn" id="dmSendBtn" style="background:${isDm?meColor:c}" onclick="sendMsg()"><i class="ti ti-send"></i></button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderChatScreen(el){
+  const isDm=isDmRoom(state.curRoom);
+  if(isDm){
+    const peer=getDmPeer(state.curRoom)||state.dmPeer;
+    if(!peer){state.curRoom=null;renderTalkListScreen(el);return;}
+    const c=peer.color;
+    const msgs=state.messages[state.curRoom]||[];
+    function getMsgColor(m){return m.projColor||(m.mine?(currentUser?.color||"#888"):c);}
+    let msgsH=`<div class="date-div">${new Date().toLocaleDateString("ja-JP",{month:"long",day:"numeric"})}</div>`;
+    msgs.forEach(m=>{msgsH+=m.type==="msg"?msgHTML(m,getMsgColor(m),msgs):taskHTML(m,getMsgColor(m),msgs);});
+    const activeProj=state.dmActiveProj?state.projects.find(p=>p.id===state.dmActiveProj):null;
+    const dmPickHtml=`<div class="dm-color-bar">
+      <span style="font-size:11px;color:var(--text3);flex-shrink:0">話題:</span>
+      <button class="dcp-btn${!state.dmActiveProj?" active":""}" onclick="setDmActiveProj(null)"><i class="ti ti-sparkles" style="font-size:12px"></i>AI自動</button>
+      ${state.projects.map(p=>`<button class="dcp-btn${state.dmActiveProj===p.id?" active":""}" onclick="setDmActiveProj('${p.id}')"><div style="width:8px;height:8px;border-radius:50%;background:${p.color}"></div>${esc(p.name)}</button>`).join("")}
+    </div>`;
+    el.innerHTML=`
+      <div class="topbar">
+        <button class="tb-back" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+        <div class="tb-av" style="background:${c}">${peer.name[0]}</div>
+        <div class="tb-title">${esc(peer.name)}</div>
+        <span style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:3px;flex-shrink:0">${activeProj?`<div style="width:7px;height:7px;border-radius:50%;background:${activeProj.color}"></div>${esc(activeProj.name)}`:`<i class="ti ti-sparkles" style="font-size:12px"></i>AI`}</span>
+      </div>
+      ${dmPickHtml}
+      <div class="chat-wrap">
+        <div class="messages" id="messages" id="msgArea">${msgsH}</div>
+        ${buildInputHTML(c,true,peer)}
+      </div>`;
+  } else {
+    const proj=state.projects.find(p=>p.id===state.curRoom);
+    if(!proj){state.curRoom=null;renderTalkListScreen(el);return;}
+    const c=proj.color;
+    const msgs=state.messages[state.curRoom]||[];
+    let msgsH=`<div class="date-div">2026年6月3日</div>`;
+    msgs.forEach(m=>{msgsH+=m.type==="msg"?msgHTML(m,c,msgs):taskHTML(m,c,msgs);});
+    const tabs=["チャット","タスク","メディア","リンク","ファイル"];
+    const tabKeys=["chat","tasks","media","links","files"];
+    el.innerHTML=`
+      <div class="topbar">
+        <button class="tb-back" onclick="goBack()"><i class="ti ti-arrow-left"></i></button>
+        <div class="tb-av" style="background:${c};width:32px;height:32px;font-size:12px">${proj.name[0]}</div>
+        <div class="tb-title">${esc(proj.name)}</div>
+        <button class="tb-btn" onclick="openNewTaskModal()"><i class="ti ti-plus"></i></button>
+      </div>
+      <div class="tabs-row">${tabs.map((t,i)=>`<button class="tab-pill${state.subView===tabKeys[i]?" active":""}" onclick="setSubView('${tabKeys[i]}')">${t}</button>`).join("")}</div>
+      <div class="chat-wrap" id="chatWrap">
+        ${state.subView==="chat"?`<div class="messages" id="msgArea" style="background:${c}0a">${msgsH}</div>${buildInputHTML(c,false,null)}`
+        :state.subView==="tasks"?renderProjTasksHTML(proj,c)
+        :state.subView==="media"?renderPanelMedia(msgs,c)
+        :state.subView==="links"?renderPanelLinks(msgs,c)
+        :renderPanelFiles(msgs,c)}
+      </div>`;
+    if(state.subView==="task"){
+      // task input
+    }
+  }
+  const ma=document.getElementById("messages");
+  if(ma)setTimeout(()=>ma.scrollTop=ma.scrollHeight,50);
+  setupInputListeners();
+  setupDrop();
+}
+
+// ── PROJ TASK LIST (sub-view) ──
+function renderProjTasksHTML(proj,c){
+  const msgs=state.messages[proj.id]||[];
+  const tasks=msgs.filter(m=>m.type==="task");
+  if(!tasks.length)return`<div class="empty"><i class="ti ti-clipboard-x"></i>タスクなし</div>`;
+  return`<div style="flex:1;overflow-y:auto">${tasks.map(m=>{
+    const t=m.task,today=new Date().toISOString().slice(0,10);
+    const ov=!t.done&&t.due&&t.due<today;
+    const df=t.due?t.due.replace(/\d+-(\d+)-(\d+)/,"$1/$2"):"";
+    return`<div class="task-card-m">
+      <div class="tc-bar" style="background:${c}"></div>
+      <div class="tc-body">
+        <div class="tc-title${t.done?" done":""}">${esc(t.title)}</div>
+        <div class="tc-meta">
+          <span class="pill ${{high:"ph",med:"pm",low:"pl"}[t.priority]}">${{high:"高",med:"中",low:"低"}[t.priority]}</span>
+          ${t.assignee?`<span style="font-size:12px;color:var(--text2)">${esc(t.assignee)}</span>`:""}
+          ${df?`<span style="font-size:12px;color:${ov?"#a32d2d":"var(--text2)"}">${df}${ov?" !":""}</span>`:""}
+        </div>
+      </div>
+      <button class="tc-done-btn" onclick="toggleTask('${m.id}')"><i class="ti ti-${t.done?"rotate-clockwise":"check"}"></i></button>
+    </div>`;
+  }).join("")}</div>
+  <div class="input-area" id="inputArea">
+    <div class="tgrid2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+      <input type="text" id="tT" placeholder="タスク名 *" style="font-size:14px"/>
+      <input type="text" id="tA" placeholder="担当者" style="font-size:14px"/>
+      <input type="date" id="tD" style="font-size:14px"/>
+      <select id="tP" style="font-size:14px"><option value="high">高</option><option value="med" selected>中</option><option value="low">低</option></select>
+    </div>
+    <div class="input-row">
+      <input type="text" class="msg-input" id="tM" placeholder="メモ（任意）" style="border-radius:20px;padding:8px 14px;font-size:14px"/>
+      <button class="send-btn" style="background:${c}" onclick="sendTask()"><i class="ti ti-send"></i></button>
+    </div>
+  </div>`;
+}
+
+// ── PANEL CONTENT ──
+function renderPanelMedia(msgs,c){
+  const images=[];
+  msgs.forEach(m=>(m.attachments||[]).filter(a=>a.type&&a.type.startsWith("image/")).forEach(a=>images.push({...a,sender:m.sender,time:m.time})));
+  if(!images.length)return`<div class="empty"><i class="ti ti-photo-off"></i>画像がまだありません</div>`;
+  return`<div class="panel-wrap"><div class="panel-section-label">${images.length}件の画像</div><div class="media-grid">${images.map(a=>`<div class="media-item" onclick="openImgViewer('${(a.url||a.dataUrl||'').replace(/'/g,"\\'")}')"><img src="${getAttSrc(a)}" alt="${esc(a.name)}" loading="lazy"/></div>`).join("")}</div></div>`;
+}
+function renderPanelLinks(msgs,c){
+  const links=extractLinks(msgs);
+  if(!links.length)return`<div class="empty"><i class="ti ti-link-off"></i>リンクがまだありません</div>`;
+  return`<div class="panel-wrap"><div class="panel-section-label">${links.length}件のリンク</div>${links.map(lk=>`
+    <div class="link-item-m" onclick="window.open('${lk.url.replace(/'/g,"\\'")}','_blank')">
+      <div class="link-favicon"><img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(lk.domain)}&sz=32" onerror="this.parentNode.innerHTML='<i class=\\'ti ti-world\\'></i>'" alt=""/></div>
+      <div class="link-body-m">
+        <div class="link-url-m">${esc(lk.url.length>45?lk.url.slice(0,45)+"…":lk.url)}</div>
+        <div class="link-meta-m">${esc(lk.domain)} · ${esc(lk.sender)} ${lk.time}</div>
+      </div>
+      <button class="link-copy-m" onclick="event.stopPropagation();copyLink('${lk.url.replace(/'/g,"\\'")}')"><i class="ti ti-copy"></i></button>
+    </div>`).join("")}</div>`;
+}
+function renderPanelFiles(msgs,c){
+  const files=[];
+  msgs.forEach(m=>(m.attachments||[]).filter(a=>!a.type||!a.type.startsWith("image/")).forEach(a=>files.push({...a,sender:m.sender,time:m.time})));
+  if(!files.length)return`<div class="empty"><i class="ti ti-files-off"></i>ファイルがまだありません</div>`;
+  const sizeStr=s=>s>1024*1024?`${(s/1024/1024).toFixed(1)}MB`:`${Math.round(s/1024)}KB`;
+  return`<div class="panel-wrap"><div class="panel-section-label">${files.length}件のファイル</div><div class="file-list-m">${files.map(a=>{
+    const fi=getFileIcon(a.name,a.type),ext=getFileExt(a.name).toUpperCase();
+    return`<a class="file-item-m" href="${getAttSrc(a)}" download="${esc(a.name)}">
+      <div class="file-icon-m" style="background:${fi.bg};color:${fi.fg}"><i class="ti ${fi.icon}"></i></div>
+      <div class="file-body-m">
+        <div class="file-name-m">${esc(a.name)}</div>
+        <div class="file-meta-m"><span style="background:${fi.bg};color:${fi.fg};padding:1px 5px;border-radius:3px">${ext}</span><span>${sizeStr(a.size||0)}</span><span>${esc(a.sender)} ${a.time}</span></div>
+      </div>
+    </a>`;
+  }).join("")}</div></div>`;
+}
+
+// ── GROUP PANEL (media/links/files full screen) ──
+function openGroupPanel(roomId,tab){
+  state.groupPanel={projId:roomId,tab};
+  state.curRoom=roomId;state.page="chat";
+  if(isDmRoom(roomId)){const peer=getDmPeer(roomId);if(peer)state.dmPeer=peer;}
+  render();
+}
+function renderGroupPanelScreen(el){
+  const {projId,tab}=state.groupPanel;
+  const isDm=isDmRoom(projId);
+  const msgs=state.messages[projId]||[];
+  let name="",c="#888",iconHtml="";
+  if(isDm){
+    const peer=getDmPeer(projId)||state.dmPeer;
+    name=peer?.name||"DM";c=peer?.color||"#888";
+    iconHtml=`<div class="tb-av" style="background:${c}">${name[0]}</div>`;
+  } else {
+    const proj=state.projects.find(p=>p.id===projId);
+    name=proj?.name||"";c=proj?.color||"#888";
+    iconHtml=`<div class="tb-av" style="background:${c};border-radius:8px;width:32px;height:32px;font-size:12px">${name[0]}</div>`;
+  }
+  const TAB_LABELS={media:"メディア",links:"リンク",files:"ファイル"};
+  let content="";
+  if(tab==="media")content=renderPanelMedia(msgs,c);
+  else if(tab==="links")content=renderPanelLinks(msgs,c);
+  else content=renderPanelFiles(msgs,c);
+  el.innerHTML=`
+    <div class="topbar">
+      <button class="tb-back" onclick="backFromPanel()"><i class="ti ti-arrow-left"></i></button>
+      ${iconHtml}
+      <div class="tb-title">${esc(name)}</div>
+      <span class="tb-sub">${TAB_LABELS[tab]}</span>
+    </div>
+    <div class="tabs-row">
+      ${["media","links","files"].map(t=>`<button class="tab-pill${tab===t?" active":""}" onclick="openGroupPanel('${projId}','${t}')">${TAB_LABELS[t]}</button>`).join("")}
+    </div>
+    <div style="flex:1;overflow:hidden;display:flex;flex-direction:column">${content}</div>`;
+}
+function backFromPanel(){state.groupPanel=null;render();}
+
+// ── TASKS SCREEN ──
+function renderTasksScreen(el){
+  const myName=currentUser?.name||"自分";
+  const allTasks=[];
+  state.projects.forEach(p=>{
+    (state.messages[p.id]||[]).filter(m=>m.type==="task").forEach(m=>{
+      if(m.mine||(m.sender===myName)||(m.task.assignee&&m.task.assignee===myName))
+        allTasks.push({...m,proj:p,source:"group"});
+    });
+  });
+  Object.keys(state.messages).filter(k=>isDmRoom(k)).forEach(key=>{
+    const peer=getDmPeer(key);
+    (state.messages[key]||[]).filter(m=>m.type==="task").forEach(m=>allTasks.push({...m,proj:{id:key,name:peer?.name||"DM",color:peer?.color||"#888"},source:"dm"}));
+  });
+  const today=new Date().toISOString().slice(0,10);
+  const overdue=allTasks.filter(t=>!t.task.done&&t.task.due&&t.task.due<today);
+  const open=allTasks.filter(t=>!t.task.done&&!(t.task.due&&t.task.due<today));
+  const done=allTasks.filter(t=>t.task.done);
+  const renderGroup=(tasks,label,color="#a32d2d")=>{
+    if(!tasks.length)return"";
+    return`<div class="task-group-header" style="color:${label.includes("期限")?"#a32d2d":"var(--text2)"}">${label} (${tasks.length})</div>`+
+    tasks.map(m=>{
+      const t=m.task,c=m.proj.color,ov=!t.done&&t.due&&t.due<today;
+      const df=t.due?t.due.replace(/\d+-(\d+)-(\d+)/,"$1/$2"):"";
+      return`<div class="task-card-m">
+        <div class="tc-bar" style="background:${c}"></div>
+        <div class="tc-body">
+          <div class="tc-title${t.done?" done":""}">${esc(t.title)}</div>
+          <div class="tc-meta">
+            <span class="pill ${{high:"ph",med:"pm",low:"pl"}[t.priority]}">${{high:"高",med:"中",low:"低"}[t.priority]}</span>
+            <span style="font-size:11px;padding:1px 6px;border-radius:99px;background:${c}22;color:${c}">${esc(m.proj.name)}</span>
+            ${t.assignee?`<span style="font-size:12px;color:var(--text2)">${esc(t.assignee)}</span>`:""}
+            ${df?`<span style="font-size:12px;color:${ov?"#a32d2d":"var(--text2)"}">${df}${ov?" !":""}</span>`:""}
+          </div>
+        </div>
+        <button class="tc-done-btn" onclick="toggleTask('${m.id}')"><i class="ti ti-${t.done?"rotate-clockwise":"check"}"></i></button>
+      </div>`;
+    }).join("");
+  };
+  el.innerHTML=`<div class="topbar"><span class="tb-title">自分のタスク</span><span class="tb-sub">${allTasks.length}件</span></div>
+    <div class="list-view">
+      ${allTasks.length===0?`<div class="empty"><i class="ti ti-checkbox"></i>担当タスクはありません</div>`:""}
+      ${renderGroup(overdue,"⚠ 期限超過")}
+      ${renderGroup(open,"未完了")}
+      ${renderGroup(done,"完了")}
+    </div>`;
+}
+
+// ── DASH SCREEN ──
+function renderDashScreen(el){
+  const allTasks=[];
+  state.projects.forEach(p=>(state.messages[p.id]||[]).filter(m=>m.type==="task").forEach(m=>allTasks.push({...m,proj:p})));
+  const allMsgs=Object.values(state.messages).reduce((a,b)=>a+b.length,0);
+  const open=allTasks.filter(t=>!t.task.done).length;
+  const today=new Date().toISOString().slice(0,10);
+  const ov=allTasks.filter(t=>!t.task.done&&t.task.due&&t.task.due<today).length;
+  const projCards=state.projects.map(p=>{
+    const tasks=(state.messages[p.id]||[]).filter(m=>m.type==="task");
+    const pd=tasks.filter(t=>t.task.done).length;
+    const pct=tasks.length?Math.round(pd/tasks.length*100):0;
+    const r=44,stroke=2*Math.PI*r,offset=stroke*(1-pct/100);
+    return`<div class="proj-progress-card" onclick="selectRoom('${p.id}')">
+      <div class="ppc-bar-wrap">
+        <svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="${r/1.6}" fill="none" stroke="var(--bg2)" stroke-width="3"/><circle cx="22" cy="22" r="${r/1.6}" fill="none" stroke="${p.color}" stroke-width="3" stroke-dasharray="${2*Math.PI*(r/1.6)}" stroke-dashoffset="${2*Math.PI*(r/1.6)*(1-pct/100)}" transform="rotate(-90 22 22)"/></svg>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:${p.color}">${pct}%</div>
+      </div>
+      <div class="ppc-info">
+        <div class="ppc-name">${esc(p.name)}</div>
+        <div class="ppc-sub">未完了 ${tasks.filter(t=>!t.task.done).length} / 完了 ${pd}</div>
+      </div>
+    </div>`;
+  }).join("");
+  el.innerHTML=`<div class="topbar"><span class="tb-title">ダッシュボード</span></div>
+    <div class="list-view">
+      <div class="dash-stats">
+        <div class="dash-stat"><div class="ds-num">${state.projects.length}</div><div class="ds-lbl">案件数</div></div>
+        <div class="dash-stat"><div class="ds-num">${open}</div><div class="ds-lbl">未完了タスク</div></div>
+        <div class="dash-stat"><div class="ds-num" style="color:${ov>0?"#a32d2d":"var(--text)"}">${ov}</div><div class="ds-lbl">期限超過</div></div>
+        <div class="dash-stat"><div class="ds-num">${allMsgs}</div><div class="ds-lbl">メッセージ</div></div>
+      </div>
+      <div class="dash-section"><div style="font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px">案件別進捗</div>${projCards}</div>
+    </div>`;
+}
+
+// ── MEDIA SCREEN ──
+function renderMediaScreen(el){
+  const allAtts=getAllAttachments().filter(a=>a.type&&a.type.startsWith("image/"));
+  const filtered=state.mediaFilter?allAtts.filter(a=>a.projId===state.mediaFilter):allAtts;
+  let filterHtml=`<div class="dm-color-bar">
+    <button class="dcp-btn${!state.mediaFilter?" active":""}" onclick="setMediaFilter(null)">すべて (${allAtts.length})</button>
+    ${state.projects.map(p=>{const cnt=allAtts.filter(a=>a.projId===p.id).length;return cnt>0?`<button class="dcp-btn${state.mediaFilter===p.id?" active":""}" onclick="setMediaFilter('${p.id}')"><div style="width:8px;height:8px;border-radius:50%;background:${p.color}"></div>${esc(p.name)} (${cnt})</button>`:""}).join("")}
+  </div>`;
+  const gridHtml=!filtered.length?`<div class="empty"><i class="ti ti-photo-off"></i>画像がありません</div>`:
+    `<div class="media-grid">${filtered.map(a=>`<div class="media-item" onclick="openImgViewer('${(a.url||a.dataUrl||'').replace(/'/g,"\\'")}')"><img src="${getAttSrc(a)}" loading="lazy" alt="${esc(a.name)}"/><div class="mi-dot" style="background:${a.projColor}"></div></div>`).join("")}</div>`;
+  el.innerHTML=`<div class="topbar"><span class="tb-title">メディア一覧</span><span class="tb-sub">${filtered.length}件</span></div>${filterHtml}<div class="list-view">${gridHtml}</div>`;
+}
+function setMediaFilter(id){state.mediaFilter=id;render();}
+
+// ── AI SCREEN ──
+function renderAIScreen(el){
+  const hasKey=!!apiKey;
+  let projCards=state.projects.map(p=>{
+    const msgs=state.messages[p.id]||[];
+    const preview=msgs.slice(0,4).map(m=>m.type==="msg"?m.text:(m.task?.title||"")).filter(Boolean).join("、");
+    return`<div class="ai-proj-card">
+      <div class="apc-head">
+        <div style="width:34px;height:34px;border-radius:8px;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#fff;flex-shrink:0">${p.name[0]}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:500;color:var(--text)">${esc(p.name)}</div>
+          <div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">${esc(preview)||"メッセージなし"}</div>
+        </div>
+        <div style="width:12px;height:12px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+      </div>
+      <div class="apc-body">
+        <button class="ai-btn" id="aibtn-${p.id}" onclick="analyzeProjectMobile('${p.id}')" ${!hasKey?"disabled":""}>
+          <i class="ti ti-sparkles" style="font-size:15px"></i> AI分析で最適カラーを提案
+        </button>
+        <div id="airesult-${p.id}" style="display:none"></div>
+      </div>
+    </div>`;
+  }).join("");
+  el.innerHTML=`
+    <div class="topbar"><span class="tb-title">AI分析</span></div>
+    <div class="ai-page">
+      ${!hasKey?`<div style="background:#faeeda;border:0.5px solid rgba(186,117,23,.3);border-radius:var(--radius);padding:12px 14px;font-size:13px;color:#633806">
+        <div style="font-weight:500;margin-bottom:8px"><i class="ti ti-key" style="font-size:14px;vertical-align:-2px;margin-right:4px"></i>Anthropic APIキー</div>
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-..." value="${esc(apiKey)}" style="width:100%;margin-bottom:8px"/>
+        <button onclick="saveApiKeyMobile()" style="width:100%;padding:10px;background:#1d9e75;color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-family:var(--font)">保存</button>
+      </div>`:`<div style="background:#e1f5ee;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#085041;display:flex;align-items:center;gap:8px"><i class="ti ti-circle-check" style="font-size:16px"></i>APIキー設定済み<button onclick="clearApiKeyMobile()" style="margin-left:auto;border:none;background:transparent;font-size:12px;color:var(--text3);font-family:var(--font)">変更</button></div>`}
+      ${projCards}
+    </div>`;
+}
+function saveApiKeyMobile(){const v=document.getElementById("apiKeyInput")?.value.trim();if(v){apiKey=v;localStorage.setItem("anthropic_api_key",v);render();}}
+function clearApiKeyMobile(){apiKey="";localStorage.removeItem("anthropic_api_key");render();}
+async function analyzeProjectMobile(projId){
+  if(!apiKey){showToast("APIキーを設定してください");return;}
+  const proj=state.projects.find(p=>p.id===projId);if(!proj)return;
+  const btn=document.getElementById(`aibtn-${projId}`);
+  const resultEl=document.getElementById(`airesult-${projId}`);
+  if(!resultEl)return;
+  btn.disabled=true;btn.innerHTML=`<i class="ti ti-loader" style="font-size:15px;animation:spin 1s linear infinite"></i> 分析中…`;
+  resultEl.style.display="block";resultEl.innerHTML=`<div style="font-size:12px;color:var(--text3)">AIが会話内容を分析しています…</div>`;
+  const msgs=state.messages[projId]||[];
+  const msgSummary=msgs.slice(0,20).map(m=>m.type==="msg"?`[${m.sender}]: ${m.text}`:`[タスク] ${m.task.title}`).filter(Boolean).join("\n");
+  const palDesc=PAL.map(c=>`${c} (${PAL_NAMES[c]})`).join(", ");
+  const prompt=`あなたはプロジェクト管理の専門家です。以下の案件名とチャット会話内容を分析し、この案件に最適な色を1つ選んでください。\n\n案件名: ${proj.name}\n会話内容:\n${msgSummary||"(会話なし)"}\n\n選択肢: ${palDesc}\n\n以下のJSON形式のみで回答してください:\n{"color":"#xxxxxx","name":"色名","reason":"この色を選んだ理由を30字以内で"}`;
+  try{
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:200,messages:[{role:"user",content:prompt}]})});
+    const data=await res.json();if(data.error)throw new Error(data.error.message);
+    const json=JSON.parse(data.content[0].text.replace(/```json|```/g,"").trim());
+    const isSame=json.color===proj.color;
+    resultEl.innerHTML=`<div class="ai-result">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <i class="ti ti-sparkles" style="font-size:14px;color:#ba7517"></i>
+        <span style="font-weight:500">提案: <span style="color:${json.color}">${esc(json.name)}</span></span>
+        ${isSame?`<span style="font-size:11px;padding:2px 6px;border-radius:99px;background:#e1f5ee;color:#085041">現在と一致</span>`:""}
+      </div>
+      <div style="font-size:12px;margin-bottom:8px">${esc(json.reason)}</div>
+      <div class="cs-opts">${PAL.map(c=>`<button class="cs-opt${c===json.color?" selected":""}" onclick="applyColorMobile('${projId}','${c}')"><div style="width:10px;height:10px;border-radius:50%;background:${c}"></div>${PAL_NAMES[c]}${c===json.color?` <i class="ti ti-sparkles" style="font-size:11px;color:#ba7517"></i>`:""}</button>`).join("")}</div>
+    </div>`;
+  }catch(e){resultEl.innerHTML=`<div style="font-size:12px;color:#a32d2d;padding:8px 10px;background:#fcebeb;border-radius:8px">${esc(e.message||"エラーが発生しました")}</div>`;}
+  finally{btn.disabled=false;btn.innerHTML=`<i class="ti ti-sparkles" style="font-size:15px"></i> 再分析`;}
+}
+function applyColorMobile(projId,color){
+  const proj=state.projects.find(p=>p.id===projId);if(!proj)return;
+  proj.color=color;saveData();
+  document.querySelectorAll(`#airesult-${projId} .cs-opt`).forEach(el=>el.className="cs-opt"+((el.getAttribute("onclick")||"").includes(`'${color}'`)?" selected":""));
+  showToast("カラーを変更しました");render();
+}
+
+// ── COPY LINK ──
+function copyLink(url){
+  navigator.clipboard.writeText(url).then(()=>showToast("コピーしました")).catch(()=>showToast("コピーに失敗しました"));
+}
+
+// ── MODAL ──
+function openModal(){document.getElementById("modalWrap").classList.remove("hidden");}
+function closeModal(){document.getElementById("modalWrap").classList.add("hidden");}
+function bgClose(e){if(e.target===document.getElementById("modalWrap"))closeModal();}
+function openNewProjModal(){
+  modalMode="newProj";newProjColor=PAL[0];
+  document.getElementById("mTitle").textContent="新しい案件を追加";
+  document.getElementById("mBody").innerHTML=`
+    <div class="mf"><label>案件名</label><input type="text" id="npN" placeholder="案件名を入力"/></div>
+    <div class="mf"><label>カラー</label><div class="color-pick" id="cpick">${PAL.map(c=>`<div class="cp${c===newProjColor?" sel":""}" style="background:${c}" onclick="pickNewProjColor('${c}')"></div>`).join("")}</div></div>`;
+  openModal();
+}
+function openNewTaskModal(){
+  modalMode="newTask";
+  document.getElementById("mTitle").textContent="タスクを追加";
+  document.getElementById("mBody").innerHTML=`
+    <div class="mf"><label>タイトル</label><input type="text" id="ntTitle" placeholder="タスク名"/></div>
+    <div class="mfrow"><div class="mf"><label>担当者</label><input type="text" id="ntAssign" placeholder="担当者"/></div><div class="mf"><label>期限</label><input type="date" id="ntDue"/></div></div>
+    <div class="mf"><label>優先度</label><select id="ntPrio"><option value="high">高</option><option value="med" selected>中</option><option value="low">低</option></select></div>
+    <div class="mf"><label>メモ</label><textarea id="ntMemo" placeholder="メモ（任意）"></textarea></div>`;
+  openModal();
+}
+function pickNewProjColor(c){newProjColor=c;document.querySelectorAll("#cpick .cp").forEach(el=>el.className="cp"+((el.getAttribute("onclick")||"").includes(`'${c}'`)?" sel":""));}
+function modalSave(){
+  if(modalMode==="newProj"){
+    const name=document.getElementById("npN")?.value.trim();
+    if(!name)return;
+    const id="p"+Date.now();
+    const proj={id,name,color:newProjColor};
+    state.projects.push(proj);
+    state.messages[id]=[];
+    state.curRoom=id;state.page="chat";state.subView="chat";state.groupPanel=null;
+    saveProject(proj);
+  } else if(modalMode==="newTask"){
+    const title=document.getElementById("ntTitle")?.value.trim();
+    if(!title||!state.curRoom)return;
+    const msgId=Date.now();
+    const taskObj={title,assignee:document.getElementById("ntAssign").value.trim(),due:document.getElementById("ntDue").value,priority:document.getElementById("ntPrio").value,memo:document.getElementById("ntMemo").value.trim(),done:false};
+    const msgObj={id:msgId,type:"task",sender:currentUser?.name||"自分",mine:true,time:nowTime(),task:taskObj};
+    state.messages[state.curRoom].push(msgObj);
+    saveMessage(state.curRoom,msgObj);
+  } else if(modalMode==="editTask"){
+    const found=findMsg(editId);
+    if(found){const t=found.m.task;t.title=document.getElementById("eT")?.value.trim()||t.title;t.assignee=document.getElementById("eA")?.value.trim();t.due=document.getElementById("eD")?.value;t.priority=document.getElementById("eP")?.value;t.memo=document.getElementById("eMe")?.value.trim();updateTaskInDb(editId,t);}
+  } else if(modalMode==="editProfile"&&currentUser){
+    const name=document.getElementById("epName")?.value.trim();
+    if(name)currentUser.name=name;
+    if(!currentUser.isGuest){
+      const email=document.getElementById("epEmail")?.value.trim();
+      const pass=document.getElementById("epPass")?.value;
+      if(email)currentUser.email=email;
+      if(pass&&pass.length>=6)currentUser.password=pass;
+      const users=loadUsers();const idx=users.findIndex(u=>u.id===currentUser.id);
+      if(idx>=0)users[idx]={...users[idx],...currentUser};saveUsers(users);
+    }
+    saveSession(currentUser);updateNavProfile();
+  }
+  closeModal();render();
+}
+
+// ── NAVIGATION ──
+function setPage(p){state.page=p;if(p!=="chat"){state.curRoom=null;state.groupPanel=null;}render();}
+function setSubView(v){state.subView=v;render();}
+function selectRoom(id){state.curRoom=id;state.page="chat";state.subView="chat";state.groupPanel=null;state.dmPeer=null;render();}
+function goBack(){
+  if(state.groupPanel){state.groupPanel=null;render();return;}
+  state.curRoom=null;state.dmPeer=null;state.page="chat";render();
+}
+
+// ── DEMO DATA ──
+function initDemoData(){
+  // Supabase版ではデータはサーバーから取得するため、ローカルデモデータは不要
+}
+
+async function initDemoUsers(){
+  const demos=[
+    {id:"demo1",name:"田中",email:"tanaka@demo.com",password:"demo1234",color:"#1d9e75",isGuest:false,createdAt:"2026-01-01T00:00:00Z"},
+    {id:"demo2",name:"佐藤",email:"sato@demo.com",password:"demo1234",color:"#534ab7",isGuest:false,createdAt:"2026-01-01T00:00:00Z"},
+    {id:"demo3",name:"鈴木",email:"suzuki@demo.com",password:"demo1234",color:"#d85a30",isGuest:false,createdAt:"2026-01-01T00:00:00Z"},
+  ];
+  const existing=_cachedUsers||[];
+  for(const d of demos){
+    if(!existing.find(u=>u.id===d.id)){
+      await saveUser(d);
+    }
+  }
+}
+
+// ── SPIN ANIMATION ──
+const _style=document.createElement("style");
+_style.textContent=`@keyframes spin{to{transform:rotate(360deg)}}`;
+document.head.appendChild(_style);
+
+// ── INIT ──
+async function init(){
+  const sess=loadSession();
+  if(sess){currentUser=sess;updateNavProfile();}
+  else{showAuth();return;}
+
+  await loadData();
+  await initDemoUsers();
+  subscribeRealtime();
+  state.curRoom=null;
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
